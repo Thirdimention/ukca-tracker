@@ -1,16 +1,31 @@
 {
-  "name": "UKCA Toy Test Tracker",
-  "short_name": "UKCA Tracker",
-  "description": "EN71-1 self-verification, technical file, declaration of conformity and batch register for 3D-printed toys.",
+  "name": "Thirdimention UKCA",
+  "short_name": "Thirdimention",
+  "description": "UKCA toy compliance for Thirdimention \u2014 EN71-1 self-verification, technical file, declaration of conformity, batches and materials.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#F1F3EE",
-  "theme_color": "#2A5C86",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0A0A0B",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
