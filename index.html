@@ -161,6 +161,16 @@
     display:flex; align-items:center; gap:6px; padding:0 6px; white-space:nowrap;
   }
   .save-dot{width:7px; height:7px; border-radius:50%; background:var(--ink-faint); flex:none;}
+  .cloud-chip{
+    display:inline-flex; align-items:center; gap:6px; padding:0 6px; white-space:nowrap;
+    font-family:var(--font-mono); font-size:11px; color:var(--ink-muted);
+  }
+  .cloud-chip[hidden]{display:none;}
+  .cloud-chip-dot{width:7px; height:7px; border-radius:50%; background:var(--pass); flex:none;}
+  .cloud-chip[data-state="pending"] .cloud-chip-dot{background:var(--pending);}
+  .cloud-chip[data-state="busy"] .cloud-chip-dot{background:var(--accent); animation:pulse 1s ease-in-out infinite;}
+  .cloud-chip[data-state="err"] .cloud-chip-dot{background:var(--fail);}
+  @media (max-width:900px){ .cloud-chip span:not(.cloud-chip-dot){display:none;} }
   .save-chip[data-state="saving"] .save-dot{background:var(--pending); animation:pulse 1s ease-in-out infinite;}
   .save-chip[data-state="saved"] .save-dot{background:var(--pass);}
   .save-chip[data-state="error"] .save-dot{background:var(--fail);}
@@ -944,6 +954,7 @@
     </div>
     <div class="topbar-actions">
       <span class="save-chip" id="saveChip" data-state="local"><span class="save-dot"></span><span id="saveChipText">Loading…</span></span>
+      <span class="cloud-chip" id="cloudChip" data-state="saved" hidden><span class="cloud-chip-dot"></span><span>Cloud</span></span>
       <button class="btn ghost" id="btnProfile" title="Your business details and standing answers">My details</button>
       <button class="btn ghost" id="btnCloud" title="Cloud backup and sync">Cloud</button>
       <button class="btn primary" id="btnInstall" title="Install this as an app on your device" hidden>Install app</button>
@@ -1388,7 +1399,7 @@
 
   /* ================= State ================= */
   /* materials is a workshop-wide library shared by every record, not per-toy. */
-  var state = { records:{}, activeId:null, materials:[], profile:null };
+  var state = { records:{}, activeId:null, materials:[], profile:null, deletedMaterials:[] };
   var POLYMERS = ["PLA", "PLA+", "PETG", "ABS", "ASA", "TPU", "PC", "Nylon", "Resin"];
   var artifactNS = null;
   var artifactAvailable = false;
@@ -1470,6 +1481,7 @@
   /* ================= Material library ================= */
   function ensureMaterialsShape(){
     if(!Array.isArray(state.materials)) state.materials = [];
+    if(!Array.isArray(state.deletedMaterials)) state.deletedMaterials = [];
     state.materials.forEach(function(m){
       if(!m.id) m.id = uid();
       ["brand","polymer","colour","code","supplier","reportRef","notes"].forEach(function(k){
@@ -1578,10 +1590,10 @@
   /* The signature is what changed; the payload is what gets written (stamped, so a
      reload can tell which copy — this browser's or the artifact's — is the newer one). */
   function stateSignature(){
-    return JSON.stringify({records: state.records, activeId: state.activeId, materials: state.materials, profile: state.profile});
+    return JSON.stringify({records: state.records, activeId: state.activeId, materials: state.materials, profile: state.profile, deletedMaterials: state.deletedMaterials});
   }
   function statePayload(){
-    return JSON.stringify({records: state.records, activeId: state.activeId, materials: state.materials, profile: state.profile, savedAt: Date.now()});
+    return JSON.stringify({records: state.records, activeId: state.activeId, materials: state.materials, profile: state.profile, deletedMaterials: state.deletedMaterials, savedAt: Date.now()});
   }
 
   /* Photo evidence is stored inline, which blows past localStorage's ~5MB cap fast.
@@ -1671,11 +1683,14 @@
   }
 
   function adoptState(src){
+    /* A payload written by an older version carries no materials or profile. Falling
+       back to what's already here stops a load from emptying either of them. */
     state = {
       records: src.records,
       activeId: src.activeId,
-      materials: Array.isArray(src.materials) ? src.materials : [],
-      profile: (src.profile && typeof src.profile === "object") ? src.profile : null
+      materials: Array.isArray(src.materials) ? src.materials : ((state && state.materials) || []),
+      profile: (src.profile && typeof src.profile === "object") ? src.profile : (state && state.profile) || null,
+      deletedMaterials: Array.isArray(src.deletedMaterials) ? src.deletedMaterials : ((state && state.deletedMaterials) || [])
     };
     ensureProfileShape();
   }
@@ -3265,6 +3280,8 @@
         if(!ok) return;
         var idx = state.materials.findIndex(function(x){ return x.id === m.id; });
         if(idx > -1) state.materials.splice(idx, 1);
+        if(!Array.isArray(state.deletedMaterials)) state.deletedMaterials = [];
+        if(state.deletedMaterials.indexOf(m.id) === -1) state.deletedMaterials.push(m.id);
         Object.keys(state.records).forEach(function(id){
           var r = state.records[id];
           if(r.materialId === m.id) r.materialId = "";
@@ -4438,6 +4455,7 @@
     if(!ready) setCloudStatus("off", "Not set up yet — add your repository and token below.");
     else if(!cloud.cfg.branch) setCloudStatus("off", "Details saved — press <b>Connect</b>.");
     else setCloudStatus("on", "Connected to <b>" + escapeHtml(cloud.cfg.repo) + "</b>.", cloudWhenText());
+    setCloudChip(cloud.cfg.lastSync ? "saved" : "pending");
   }
 
   function openCloudPanel(){
@@ -4478,6 +4496,7 @@
     if(cloud.busy) return Promise.resolve(false);
     if(!cloudConfigured()) return Promise.resolve(false);
     cloud.busy = true;
+    setCloudChip("busy");
     setCloudStatus("busy", "Saving to cloud…");
     var payload = statePayload();
     var mine = 0;
@@ -4520,12 +4539,16 @@
           .then(function(){
             saveCloudCfg();
             setCloudStatus("on", "Connected to <b>" + escapeHtml(cloud.cfg.repo) + "</b>.", cloudWhenText());
+            setCloudChip("saved");
             if(manual) showToast("Saved to your private repository.");
             return true;
           });
       })
       .catch(function(err){
         setCloudStatus("err", "Save failed — " + escapeHtml(cloudErrText(err)));
+        setCloudChip("err");
+        /* Don't give up on the change — try again shortly. */
+        if(!manual){ clearTimeout(cloud.pushTimer); cloud.pushTimer = setTimeout(function(){ cloudPush(false); }, 20000); }
         if(manual) showToast("Couldn't save to the cloud: " + cloudErrText(err));
         return false;
       })
@@ -4623,7 +4646,34 @@
   }
 
   function applyRemote(remote){
+    /* The material library and your details are workshop-wide, not per-record: a copy
+       that simply doesn't carry them must never delete them. Merge rather than replace,
+       so materials can only ever be removed deliberately, from the Materials tab. */
+    var keepMaterials = (state.materials || []).slice();
+    var keepProfile = Object.assign({}, state.profile || {});
+    var keepDeleted = (state.deletedMaterials || []).slice();
+
     adoptState(remote);
+
+    var byId = {}, gone = {};
+    if(!Array.isArray(state.deletedMaterials)) state.deletedMaterials = [];
+    keepDeleted.forEach(function(id){ if(state.deletedMaterials.indexOf(id) === -1) state.deletedMaterials.push(id); });
+    state.deletedMaterials.forEach(function(id){ gone[id] = true; });
+    /* A material removed on purpose stays removed; one that simply wasn't in the
+       incoming copy is kept. */
+    state.materials = (state.materials || []).filter(function(m){ return !(m && gone[m.id]); });
+    state.materials.forEach(function(m){ if(m && m.id) byId[m.id] = true; });
+    keepMaterials.forEach(function(m){
+      if(m && m.id && !byId[m.id] && !gone[m.id]) state.materials.push(m);
+    });
+    if(state.deletedMaterials.length > 200) state.deletedMaterials = state.deletedMaterials.slice(-200);
+    ensureProfileShape();
+    PROFILE_FIELDS.forEach(function(f){
+      if(!(state.profile[f.key] || "").trim() && (keepProfile[f.key] || "").trim()){
+        state.profile[f.key] = keepProfile[f.key];
+      }
+    });
+
     Object.keys(state.records).forEach(function(id){
       ensureProcedureShape(state.records[id]);
       ensureTechFileShape(state.records[id]);
@@ -4648,11 +4698,31 @@
     return m.slice(0, 140);
   }
 
-  /* Auto-push rides the same debounce as local saving, but far more slowly. */
+  /* Auto-push follows every change, a beat after you stop typing. Short enough to feel
+     like "saves as I go", long enough that a sentence is one commit and not forty. */
+  var CLOUD_PUSH_DELAY = 2500;
   function cloudMaybePush(){
     if(!cloud.cfg.auto || !cloudConfigured() || !cloud.cfg.branch) return;
     clearTimeout(cloud.pushTimer);
-    cloud.pushTimer = setTimeout(function(){ cloudPush(false); }, 8000);
+    setCloudChip("pending");
+    cloud.pushTimer = setTimeout(function(){
+      /* If a push is already running, come back rather than dropping this change. */
+      if(cloud.busy){ cloud.pushTimer = setTimeout(cloudMaybePush, 1200); return; }
+      cloudPush(false);
+    }, CLOUD_PUSH_DELAY);
+  }
+
+  /* The top-bar chip tells you where your work actually is, at a glance. */
+  function setCloudChip(mode){
+    var chip = document.getElementById("cloudChip");
+    if(!chip) return;
+    if(!cloudConfigured() || !cloud.cfg.branch){ chip.hidden = true; return; }
+    chip.hidden = false;
+    chip.setAttribute("data-state", mode);
+    chip.title = mode === "saved" ? "Everything is saved to your private repository"
+      : mode === "pending" ? "Changes waiting to go up"
+      : mode === "busy" ? "Saving to the cloud…"
+      : "Couldn't reach the cloud — your work is still safe on this device";
   }
 
   function initCloud(){
@@ -4730,6 +4800,7 @@
       });
     });
 
+    setCloudChip(cloud.cfg.lastSync ? "saved" : "pending");
     /* On open, pick up anything another device saved since. */
     if(cloud.cfg.auto && cloudConfigured() && cloud.cfg.branch){
       setTimeout(function(){ cloudPull(false); }, 1200);
