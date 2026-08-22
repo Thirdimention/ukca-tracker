@@ -204,7 +204,7 @@
   }
   .icon-btn:hover{background:var(--surface-alt); color:var(--ink);}
 
-  .layout{display:grid; grid-template-columns:252px 1fr; gap:0; align-items:start;}
+  .layout{display:grid; grid-template-columns:274px 1fr; gap:0; align-items:start;}
   @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
 
   /* ---------- Rail ---------- */
@@ -258,17 +258,60 @@
   .done-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px;}
   .done-bar .done-msg{font-size:12.5px; color:var(--ink-muted); flex:1; min-width:180px;}
   .done-bar .done-msg b{color:var(--ink); font-weight:600;}
+  .review-chip{
+    display:inline-flex; align-items:center; gap:9px; flex-wrap:wrap;
+    font-size:12px; color:var(--ink-muted);
+    border:1px solid var(--line); border-radius:8px; padding:5px 10px;
+  }
+  .review-chip[data-state="due"]{color:var(--pending); border-color:var(--pending-line); background:var(--pending-bg);}
+  .review-chip[data-state="overdue"]{color:var(--fail); border-color:var(--fail-line); background:var(--fail-bg);}
+  .review-btn{
+    font-family:var(--font-body); font-size:11.5px; font-weight:600; color:inherit;
+    background:transparent; border:none; border-bottom:1px solid currentColor;
+    padding:0; cursor:pointer; opacity:.8;
+  }
+  .review-btn:hover{opacity:1;}
   .done-badge{
     display:inline-flex; align-items:center; gap:7px;
     font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
     color:var(--pass); background:var(--pass-bg); border:1px solid var(--pass-line);
     border-radius:8px; padding:5px 10px;
   }
+  .rail-search{position:relative; margin:0 0 12px;}
+  .rail-search-icon{
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    color:var(--ink-faint); display:flex; pointer-events:none;
+  }
+  .rail-search input{
+    width:100%; box-sizing:border-box; padding:9px 32px 9px 33px;
+    border:1px solid var(--line); border-radius:10px; background:var(--surface);
+    color:var(--ink); font-family:var(--font-body); font-size:13px; min-height:38px;
+  }
+  .rail-search input:focus{border-color:var(--ink); outline:none;}
+  .rail-search input::-webkit-search-cancel-button{display:none;}
+  .rail-search-clear{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:26px; height:26px; border-radius:7px; border:none; background:transparent;
+    color:var(--ink-faint); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .rail-search-clear[hidden]{display:none;}
+  .rail-search-clear:hover{background:var(--surface-alt); color:var(--ink);}
+  .rail-hits{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint);
+    padding:0 9px 8px; letter-spacing:.04em;
+  }
+  .rail-hits[hidden]{display:none;}
+  .record-why{
+    display:block; font-family:var(--font-mono); font-size:10px; color:var(--ink-faint);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;
+  }
+  .record-why b{color:var(--ink); font-weight:600;}
   .record-list{display:flex; flex-direction:column; gap:3px;}
   .record-item{
-    display:flex; align-items:center; gap:6px;
-    padding:8px 8px; border-radius:8px; cursor:pointer; border:1px solid transparent;
+    display:flex; align-items:center; gap:3px;
+    padding:8px 6px; border-radius:8px; cursor:pointer; border:1px solid transparent;
   }
+  .record-item .icon-btn{width:26px; height:26px; border-radius:6px;}
   .record-item:hover{background:var(--surface-alt);}
   .record-item.active{background:var(--accent-soft); border-color:var(--accent);}
   .record-main{min-width:0; flex:1;}
@@ -516,9 +559,28 @@
   .item-notes textarea:focus{border-color:var(--accent);}
 
   .photo-zone{margin-top:9px;}
-  .photo-grid{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .photo-grid{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; align-items:flex-start;}
+  .photo-cell{display:flex; flex-direction:column; gap:5px; width:110px;}
+  .photo-caption{
+    width:100%; box-sizing:border-box; font-family:var(--font-body); font-size:11px;
+    border:1px solid var(--line); border-radius:6px; padding:5px 6px;
+    background:var(--bg); color:var(--ink);
+  }
+  .photo-caption:focus{border-color:var(--ink); outline:none;}
+  .lightbox-cap{
+    position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
+    max-width:min(90vw,900px); margin:0; text-align:center;
+    color:#fff; font-size:13.5px; line-height:1.5;
+    background:rgba(10,10,11,.72); padding:8px 14px; border-radius:8px;
+  }
+  .lightbox-cap[hidden]{display:none;}
+  @media print{
+    .photo-cell{width:150px;}
+    .photo-caption{border:none; background:none; padding:2px 0; font-size:10px; color:#333;}
+    .photo-caption[data-has=""]{display:none;}
+  }
   .photo-thumb{
-    position:relative; width:76px; height:76px; border-radius:7px; overflow:hidden;
+    position:relative; width:110px; height:88px; border-radius:9px; overflow:hidden;
     border:1px solid var(--line); cursor:pointer; background:var(--surface-alt); flex:none;
   }
   .photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
@@ -612,6 +674,20 @@
   .lightbox.open{display:flex;}
   .lightbox img{max-width:min(90vw,900px); max-height:85vh; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,.5);}
   .lightbox-close{position:absolute; top:18px; right:22px; width:38px; height:38px; border-radius:50%; border:none; background:rgba(255,255,255,.12); color:#fff; font-size:18px; cursor:pointer;}
+
+  /* Reaching "new toy" without opening the menu first, on a phone. */
+  .fab{
+    position:fixed; right:16px; bottom:18px; z-index:50;
+    display:none; align-items:center; gap:8px;
+    padding:13px 18px; border-radius:99px; border:none;
+    background:var(--accent); color:var(--accent-ink); cursor:pointer;
+    font-family:var(--font-body); font-size:14px; font-weight:600;
+    box-shadow:var(--shadow-lift);
+  }
+  .fab:active{transform:translateY(1px);}
+  @media (max-width:900px){ .fab{display:inline-flex;} }
+  body[data-drawer="open"] .fab{display:none;}
+  @media print{ .fab{display:none !important;} }
 
   /* ---------- Toast ---------- */
   .toast{
@@ -713,6 +789,9 @@
   body[data-view="tech"] #progressCard,
   body[data-view="doc"] #progressCard,
   body[data-view="batch"] #progressCard,
+  body[data-view="all"] #progressCard,
+  body[data-view="all"] #secNavBlock,
+  body[data-view="all"] .meta-card,
   body[data-view="materials"] #progressCard,
   body[data-view="doc"] #secNavBlock,
   body[data-view="batch"] #secNavBlock,
@@ -828,6 +907,44 @@
     color:var(--accent); background:var(--accent-soft); border-radius:4px; padding:2px 6px; white-space:nowrap;
   }
 
+  /* ---------- Overview ---------- */
+  .ov-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); gap:10px; margin-bottom:16px;}
+  .ov-stat{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; box-shadow:var(--shadow);
+  }
+  .ov-stat b{display:block; font-family:var(--font-display); font-size:23px; line-height:1.1; color:var(--ink);}
+  .ov-stat span{
+    display:block; margin-top:3px; font-size:11px; color:var(--ink-faint);
+    letter-spacing:.04em; text-transform:uppercase; font-weight:500;
+  }
+  .ov-stat.is-good b{color:var(--pass);}
+  .ov-stat.is-bad b{color:var(--fail);}
+  .ov-stat.is-warn b{color:var(--pending);}
+  table.ov-table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface);}
+  table.ov-table th{
+    text-align:left; font-family:var(--font-mono); font-size:10px; letter-spacing:.07em;
+    text-transform:uppercase; color:var(--ink-faint); font-weight:500;
+    border-bottom:1px solid var(--line); padding:9px 12px 9px 0; white-space:nowrap;
+  }
+  table.ov-table td{padding:11px 12px 11px 0; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.ov-table td:first-child, table.ov-table th:first-child{padding-left:14px;}
+  table.ov-table td.mono{font-family:var(--font-mono); font-size:12px; white-space:nowrap;}
+  table.ov-table td.num{font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink-muted);}
+  table.ov-table td.num.bad{color:var(--fail); font-weight:600;}
+  table.ov-table td.num.warn{color:var(--pending); font-weight:600;}
+  .ov-name{font-weight:600;}
+  .ov-row{cursor:pointer;}
+  .ov-row:hover{background:var(--surface-alt);}
+  .ov-pill{
+    display:inline-block; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em;
+    text-transform:uppercase; padding:3px 8px; border-radius:20px;
+    border:1px solid var(--line-strong); color:var(--ink-muted); white-space:nowrap;
+  }
+  .ov-pill.good{color:var(--pass); border-color:var(--pass-line); background:var(--pass-bg);}
+  .ov-pill.bad{color:var(--fail); border-color:var(--fail-line); background:var(--fail-bg);}
+  .ov-pill.warn{color:var(--pending); border-color:var(--pending-line); background:var(--pending-bg);}
+
   /* ---------- Batch register ---------- */
   .batch-head{
     display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;
@@ -922,6 +1039,26 @@
     background:var(--surface-alt); padding:12px 14px; border-radius:0 7px 7px 0;
   }
 
+  /* ---------- Labels ---------- */
+  .label-sheet{display:none;}
+  .lbl{
+    border:1px dashed #999; border-radius:6px; padding:8px 9px;
+    display:flex; flex-direction:column; gap:3px; break-inside:avoid;
+    font-family:var(--font-body); color:#000; background:#fff;
+    height:100%; box-sizing:border-box;
+  }
+  .lbl-top{display:flex; align-items:center; gap:7px;}
+  .lbl-ukca{
+    font-family:var(--font-display); font-weight:700; font-size:14px; letter-spacing:.04em;
+    border:1.6px solid #000; border-radius:3px; padding:0 4px; line-height:1.35;
+  }
+  .lbl-biz{font-size:10px; font-weight:600; overflow-wrap:anywhere;}
+  .lbl-model{font-size:11.5px; font-weight:700; line-height:1.25;}
+  .lbl-codes{display:flex; gap:8px; flex-wrap:wrap; font-family:var(--font-mono); font-size:8.5px;}
+  .lbl-age{font-size:10px; font-weight:700;}
+  .lbl-warn{font-size:7.5px; line-height:1.3;}
+  .lbl-addr{font-size:6.8px; color:#333; margin-top:auto; line-height:1.3;}
+
   /* ---------- Print header (hidden on screen) ---------- */
   .print-header{display:none;}
 
@@ -929,7 +1066,7 @@
   @media print{
     .topbar, .rail, .fail-banner, .status-btn, .add-photo-label, .photo-thumb button,
     .icon-btn, .notes-toggle, .photo-toggle, .newtest-btn, .disclaimer .runtime-note,
-    .modal-overlay, .lightbox, .toast, .doc-chip button,
+    .modal-overlay, .lightbox, .toast, .doc-chip button, .batch-add, .fab,
     .view-switch, .meta-card, .tf-auto-tag, .tf-linkbtn, .markall, .jump-row,
     .menu-btn, .drawer-scrim, .brand-text p, .done-bar{display:none !important;}
     .proc-item{page-break-inside:avoid;}
@@ -944,7 +1081,16 @@
     .print-header .pgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; font-size:11px; margin-top:8px; font-family:var(--font-mono);}
     .print-header .pgrid div span{display:block; color:#555; font-size:9.5px; text-transform:uppercase; letter-spacing:.06em;}
     .field{display:none;}
-    .section{page-break-inside:avoid;}
+    .batch-field{display:block !important;}
+    .batch-field label{color:#555;}
+    .batch-card{page-break-inside:avoid; border:1px solid #999;}
+    .batch-no, .batch-field input, .batch-field select, .batch-field textarea{
+      border:0 !important; padding-left:0 !important; background:transparent !important; color:#000;
+      -webkit-appearance:none; appearance:none;
+    }
+    .batch-field textarea{height:auto !important; min-height:2.6em; overflow:visible; resize:none;}
+    .section{page-break-inside:auto;}
+    .section-head{break-after:avoid; page-break-after:avoid;}
     .item-card{page-break-inside:avoid;}
     .status-group{display:none !important;}
     .print-status{
@@ -956,11 +1102,34 @@
     .photo-thumb{cursor:default;}
     .photo-zone[hidden][data-has="1"]{display:block !important;}
 
+    /* Label sheet: nothing but the tags. */
+    body[data-printmode="labels"] .app{display:none !important;}
+    body[data-printmode="labels"] .label-sheet{
+      display:grid !important; grid-template-columns:repeat(3, 1fr);
+      grid-auto-rows:34mm; gap:4mm;
+    }
+
+    /* Evidence pack: every part of the toy's file, each starting a fresh page. */
+    body[data-printmode="pack"] #checklistView,
+    body[data-printmode="pack"] #techView,
+    body[data-printmode="pack"] #docView,
+    body[data-printmode="pack"] #batchView{display:block !important;}
+    body[data-printmode="pack"] #matView,
+    body[data-printmode="pack"] #allView{display:none !important;}
+    body[data-printmode="pack"] #techView,
+    body[data-printmode="pack"] #docView,
+    body[data-printmode="pack"] #batchView{break-before:page; page-break-before:always;}
+    body[data-printmode="pack"] .print-header{display:block !important;}
+    body[data-printmode="pack"] .progress-card{display:block !important; box-shadow:none; border:1px solid #999;}
+    body[data-printmode="pack"] .section[data-folded="1"] .item-list,
+    body[data-printmode="pack"] .section[data-folded="1"] .markall{display:flex !important;}
+
     /* Technical file & declaration printing */
     body[data-view="tech"] .print-header, body[data-view="tech"] .progress-card,
     body[data-view="doc"] .print-header, body[data-view="doc"] .progress-card,
     body[data-view="batch"] .progress-card,
-    body[data-view="materials"] .print-header, body[data-view="materials"] .progress-card{display:none !important;}
+    body[data-view="materials"] .print-header, body[data-view="materials"] .progress-card,
+    body[data-view="all"] .print-header, body[data-view="all"] .progress-card{display:none !important;}
     .mat-card{box-shadow:none; border:1px solid #999;}
     .batch-card{box-shadow:none; border:1px solid #999;}
     .batch-no{border:none !important; background:none !important;}
@@ -995,7 +1164,6 @@
       <img class="brand-logo" alt="Thirdimention"
            src="data:image/png;base64,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" />
     </div>
-    </div>
     <div class="topbar-actions">
       <span class="save-chip" id="saveChip" data-state="local"><span class="save-dot"></span><span id="saveChipText">Loading…</span></span>
       <span class="cloud-chip" id="cloudChip" data-state="saved" hidden><span class="cloud-chip-dot"></span><span>Cloud</span></span>
@@ -1019,7 +1187,13 @@
         </button>
       </div>
       <div class="rail-block">
-        <div class="rail-label">In progress</div>
+        <div class="rail-search">
+          <span class="rail-search-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.4" stroke="currentColor" stroke-width="1.4"/><path d="M10.4 10.4L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+          <input id="recordSearch" type="search" placeholder="Search toys, serials, batches" autocomplete="off" aria-label="Search records" />
+          <button class="rail-search-clear" id="recordSearchClear" aria-label="Clear search" hidden><svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="rail-hits" id="railHits" hidden></div>
+        <div class="rail-label" id="liveLabel">In progress</div>
         <div class="record-list" id="recordList"></div>
         <button class="btn primary newtest-btn" id="btnNewTest">+ New toy</button>
       </div>
@@ -1037,6 +1211,7 @@
       <div class="print-header" id="printHeader"></div>
 
       <div class="view-switch" role="tablist" aria-label="View">
+        <button type="button" id="tabAll" role="tab" aria-selected="false">All toys</button>
         <button type="button" id="tabChecklist" role="tab" aria-selected="true">Checklist</button>
         <button type="button" id="tabTech" role="tab" aria-selected="false">Technical file</button>
         <button type="button" id="tabDoc" role="tab" aria-selected="false">Declaration</button>
@@ -1100,24 +1275,33 @@
       <div id="docView" class="tf-doc" hidden></div>
       <div id="batchView" class="tf-doc" hidden></div>
       <div id="matView" class="tf-doc" hidden></div>
+      <div id="allView" hidden></div>
     </main>
   </div>
 
   <div class="disclaimer">
     <p><b>Self-verification tool, not certification.</b> This tracker is a working aid for recording your own EN71-1 physical &amp; mechanical testing as part of a UKCA/CE technical file. It does not replace professional advice, and it is not a substitute for third-party test house certification where that is required. Clause references are EN71-1 section numbers, shown for cross-referencing only. If you are unsure whether your toy meets requirements, consult your local Trading Standards body or an accredited toy-testing laboratory — responsibility for product safety and compliance rests with the manufacturer.</p>
-    <p class="runtime-note" id="runtimeNote">Data in this tool is saved automatically to this browser. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.</p>
+    <p class="runtime-note">Data in this tool is saved automatically to this artifact. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.</p>
   </div>
 </div>
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose" aria-label="Close"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
   <img id="lightboxImg" src="" alt="Test evidence photo" />
+  <p class="lightbox-cap" id="lightboxCap" hidden></p>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<button class="fab" id="btnNewToyFab" aria-label="New toy" title="New toy">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <span>New toy</span>
+</button>
+
+<div class="label-sheet" id="labelSheet"></div>
+
+<div class="toast" id="toast"></div>
 
 <div class="modal-overlay" id="promptOverlay">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
+  <div class="modal-box">
     <h3 id="promptTitle" class="prompt-title">New toy</h3>
     <p class="prompt-hint" id="promptHint"></p>
     <div class="cloud-field">
@@ -1136,8 +1320,8 @@
 </div>
 
 <div class="modal-overlay" id="profileOverlay">
-  <div class="cloud-box" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
-    <h3 id="profileTitle">My details</h3>
+  <div class="cloud-box">
+    <h3>My details</h3>
     <p class="cloud-sub">Your business details and the answers that are the same on every toy. Filled into any blank field on every record, old and new. These are stored with your data — never in the app file — so the app itself stays safe to host publicly.</p>
     <div id="profileFields"></div>
     <div class="cloud-actions" style="margin-top:16px;">
@@ -1152,9 +1336,11 @@
 </div>
 
 <div class="modal-overlay" id="cloudOverlay">
-  <div class="cloud-box" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
-    <h3 id="cloudTitle">Cloud backup</h3>
+  <div class="cloud-box">
+    <h3>Cloud backup</h3>
     <p class="cloud-sub">Keeps one copy of everything — records, materials, batches, photos and certificates — in a private GitHub repository, so every device shares the same data and every save is kept as a dated version you can go back to.</p>
+
+    <div class="cloud-warn" id="cloudUnsupported" hidden></div>
 
     <div class="cloud-status" id="cloudStatus" data-state="off">
       <span class="cloud-dot"></span>
@@ -1311,14 +1497,7 @@
   var TOTAL_PROC_ITEMS = PROCEDURE_PHASES.reduce(function(n,p){ return n + p.items.length; }, 0);
 
   /* ================= Data model: Technical File ================= */
-  /* Single source of truth for the three standards' editions — the technical file's
-     "Self-verified to" list and the Declaration of Conformity's standards table both
-     derive from this, so an edition update can't leave the two documents disagreeing. */
-  var STANDARDS = [
-    {ref:"BS EN71-1", title:"Safety of Toys — Part 1: Mechanical and physical properties", edition:"2026"},
-    {ref:"BS EN71-2", title:"Safety of Toys — Part 2: Flammability", edition:"2020+A1:2025"},
-    {ref:"BS EN71-3", title:"Safety of Toys — Part 3: Migration of certain elements", edition:"2019+A2:2024"}
-  ];
+  var STANDARDS = ["BS EN71-1:2026", "BS EN71-2:2020+A1:2025", "BS EN71-3:2019+A2:2024"];
 
   /* Block types: static (auto prose), text (saved textarea), images (saved photo zone),
      auto (computed block rendered by name). Every {model}/{business}/{age}/{ref}/{docref}
@@ -1468,6 +1647,7 @@
     check:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     open:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 13h7a1.5 1.5 0 0 0 1.5-1.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     undo:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 6.6h6.1a3.4 3.4 0 0 1 0 6.8H5.6" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.8 3.4 3 6.6l2.8 3.2" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    copy:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M10.4 5.6V4a1.6 1.6 0 0 0-1.6-1.6H4A1.6 1.6 0 0 0 2.4 4v4.8A1.6 1.6 0 0 0 4 10.4h1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
     chevron:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 6.5L8 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
   var LS_KEY = "ukca_toy_test_tracker_v1";
@@ -1494,7 +1674,7 @@
     var r = {
       id: uid(), name:"", businessName:"", toyPrototype:"", ageRange:"",
       tester:"", date: new Date().toISOString().slice(0,10),
-      createdAt: Date.now(), updatedAt: Date.now(), completedAt: 0,
+      createdAt: Date.now(), updatedAt: Date.now(), completedAt: 0, reviewedAt: Date.now(),
       comments:"", items:{}, procedure:{}, techFile: newTechFile()
     };
     SECTIONS.forEach(function(sec){
@@ -1531,12 +1711,15 @@
       process: prof("process"), qaNotes: prof("qaNotes"), labelling: prof("labelling"),
       warnings: prof("warnings"), traceability: prof("traceability"),
       storage: prof("storage"), packaging: prof("packaging"),
-      manufacturer: addr, registeredAddress: addr, address: addr,
+      manufacturer: addr, registeredAddress: addr, address: oneLine(addr),
       email: prof("email"), telephone: prof("telephone")
     };
     Object.keys(standing).forEach(function(k){
       if(standing[k] && !(rec.techFile[k] || "").trim()) rec.techFile[k] = standing[k];
     });
+    /* The address sits in a one-line field here and on the declaration, so a
+       multi-line address typed in My details is folded onto one line. */
+    if(rec.techFile.address) rec.techFile.address = oneLine(rec.techFile.address);
     if(!rec.declaration.position.trim()) rec.declaration.position = prof("position");
     if(!rec.declaration.place.trim()) rec.declaration.place = prof("place");
     ensureBatchesShape(rec);
@@ -1602,9 +1785,29 @@
   function toyCode(rec){
     return String(rec.toyPrototype || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase();
   }
+  function serialBase(rec, materialId){
+    return toyCode(rec) + materialCode(findMaterial(materialId || rec.materialId));
+  }
   function recordSerial(rec, materialId){
-    var m = findMaterial(materialId || rec.materialId);
-    return toyCode(rec) + materialCode(m);
+    var base = serialBase(rec, materialId);
+    if(!base) return "";
+    return base + (rec.serialSuffix > 1 ? "-" + rec.serialSuffix : "");
+  }
+  /* Two variations of the same toy in the same material would otherwise share a
+     serial — and a serial that isn't unique is no use for tracing anything. */
+  function assignSerialSuffix(rec){
+    var base = serialBase(rec);
+    rec.serialSuffix = 1;
+    if(!base) return;
+    var used = {};
+    Object.keys(state.records).forEach(function(id){
+      var other = state.records[id];
+      if(other === rec || other.id === rec.id) return;
+      if(serialBase(other) === base) used[other.serialSuffix > 1 ? other.serialSuffix : 1] = true;
+    });
+    var n = 1;
+    while(used[n]) n++;
+    rec.serialSuffix = n;
   }
 
   function ensureBatchesShape(rec){
@@ -1617,6 +1820,8 @@
     });
     if(typeof rec.materialId !== "string") rec.materialId = "";
     if(typeof rec.completedAt !== "number") rec.completedAt = 0;
+    if(typeof rec.reviewedAt !== "number") rec.reviewedAt = rec.completedAt || rec.createdAt || Date.now();
+    if(typeof rec.serialSuffix !== "number" || rec.serialSuffix < 1) rec.serialSuffix = 1;
   }
 
   function ensureDeclarationShape(rec){
@@ -1651,6 +1856,12 @@
 
   /* Named after the toy, never the business — every record shares the business name,
      so falling back to it labelled them all identically. */
+  /* A postal address typed over several lines reads as one line on a declaration
+     and on a swing tag. */
+  function oneLine(v){
+    return String(v || "").replace(/\s*\n+\s*/g, ", ").trim();
+  }
+
   function recordLabel(rec, fallback){
     var n = (rec.name || "").trim();
     if(n) return n;
@@ -1790,9 +2001,6 @@
   }
 
   function tryFetchState(){
-    /* data/state.json only ever exists inside the Claude-artifact runtime — skip
-       the guaranteed-404 network call on every other deployment. */
-    if(!artifactAvailable) return Promise.resolve(null);
     return fetch("data/state.json", {cache:"no-store"}).then(function(res){
       if(!res.ok) return null;
       return res.json().then(function(j){ return (j && j.records) ? j : null; });
@@ -1818,15 +2026,11 @@
   function performSave(){
     var json = stateSignature();
     pendingLocalEdits = false;
-    var localPromise = localBackup();
+    localBackup();
     cloudMaybePush();
     if(json === lastSavedJSON){ setSaveChip("saved", "Saved"); return; }
     if(!artifactAvailable || !artifactNS){
-      /* Wait for the actual write before claiming success — localBackup's own
-         catch already raises the error chip/toast when both stores fail. */
-      localPromise.then(function(result){
-        if(result.idb || result.ls) setSaveChip("local", "Saved to this browser");
-      });
+      setSaveChip("local", "Saved to this browser");
       lastSavedJSON = json;
       return;
     }
@@ -1946,11 +2150,10 @@
 
         if(!data.records) throw new Error("bad shape");
         var incoming = Object.keys(data.records).length;
-        var incomingMats = Array.isArray(data.materials) ? data.materials.length : 0;
-        if(!incoming && !incomingMats) throw new Error("empty backup");
         confirmDialog(
-          "Restore " + incoming + " test record" + (incoming === 1 ? "" : "s") +
-          (incomingMats ? " and " + incomingMats + " material" + (incomingMats === 1 ? "" : "s") : "") +
+          "Restore " + incoming + " test record(s)" +
+          (Array.isArray(data.materials) && data.materials.length
+            ? " and " + data.materials.length + " material(s)" : "") +
           " from this backup? Anything already here with a matching ID is replaced by the backup's version.",
           "Restore"
         ).then(function(ok){
@@ -2158,21 +2361,117 @@
     return {ready: blockers.length === 0, blockers: blockers};
   }
 
-  function recordRow(id, rec){
+  /* ---- Variations ----
+     A new colourway is a new record with its own evidence, but the same product
+     description, process and paperwork. Copy the writing, clear the testing. */
+  var REVIEW_DAYS = 365;
+  function daysSince(ts){ return ts ? Math.floor((Date.now() - ts) / 86400000) : 0; }
+  function reviewOverdue(rec){ return daysSince(rec.reviewedAt) > REVIEW_DAYS; }
+  function reviewDue(rec){ return daysSince(rec.reviewedAt) > (REVIEW_DAYS - 30); }
+
+  function duplicateRecord(src){
+    promptDialog({
+      title: "New variation",
+      hint: "Copies the description, process and paperwork from " +
+            recordLabel(src, "this toy") + ". Test results and photos start clean, so you re-test the variation.",
+      placeholder: recordLabel(src, "Toy") + " — red",
+      value: recordLabel(src, ""),
+      okLabel: "Create variation",
+      material: true,
+      materialId: src.materialId || ""
+    }).then(function(res){
+      if(!res) return;
+      var copy = JSON.parse(JSON.stringify(src));
+      copy.id = uid();
+      copy.name = "";
+      copy.toyPrototype = res.name;
+      copy.materialId = res.materialId || "";
+      copy.createdAt = Date.now();
+      copy.updatedAt = Date.now();
+      copy.completedAt = 0;
+      copy.reviewedAt = Date.now();
+      copy.date = new Date().toISOString().slice(0, 10);
+      copy.batches = [];
+      /* Evidence never carries over — it belongs to the toy it was taken from. */
+      Object.keys(copy.items).forEach(function(k){
+        copy.items[k].status = null;
+        copy.items[k].photos = [];
+      });
+      Object.keys(copy.procedure).forEach(function(k){
+        copy.procedure[k].done = false;
+        copy.procedure[k].docs = [];
+      });
+      if(copy.techFile && copy.techFile.images){
+        Object.keys(copy.techFile.images).forEach(function(k){ copy.techFile.images[k] = []; });
+      }
+      if(copy.declaration){ copy.declaration.modelNo = ""; copy.declaration.issueDate = copy.date; }
+      if(copy.techFile){ copy.techFile.reference = ""; copy.techFile.docReference = ""; }
+      applyDefaultStatuses(copy);
+      state.records[copy.id] = copy;
+      assignSerialSuffix(copy);
+      state.activeId = copy.id;
+      searchQuery = "";
+      var sb = document.getElementById("recordSearch"); if(sb) sb.value = "";
+      setView("checklist");
+      render(); scheduleSave();
+      window.scrollTo({top: 0, behavior: "smooth"});
+      showToast(res.name + " created from " + recordLabel(src, "the original") + ".");
+    });
+  }
+
+  /* ---- Search ----
+     Looks where you'd actually look from: the toy's name, its serial, the material,
+     and every batch number — so a code off a physical toy finds its paperwork. */
+  var searchQuery = "";
+
+  function searchRecord(rec, q){
+    if(!q) return {hit: true, why: ""};
+    var name = recordLabel(rec, "").toLowerCase();
+    var serial = recordSerial(rec).toLowerCase();
+    var mat = recordMaterials(rec).map(function(m){
+      return (materialLabel(m) + " " + materialCode(m)).toLowerCase();
+    }).join(" ");
+    var notes = (rec.comments || "").toLowerCase();
+
+    if(name.indexOf(q) > -1) return {hit: true, why: ""};
+    if(serial.indexOf(q) > -1) return {hit: true, why: "serial " + recordSerial(rec)};
+
+    var batch = null;
+    (rec.batches || []).forEach(function(b){
+      if(!batch && (b.number || "").toLowerCase().indexOf(q) > -1) batch = b;
+    });
+    if(batch){
+      return {hit: true, why: "batch " + batch.number +
+        (batch.date ? " · " + fmtDate(batch.date) : "")};
+    }
+
+    if(mat.indexOf(q) > -1){
+      var m0 = recordMaterials(rec)[0];
+      return {hit: true, why: m0 ? materialLabel(m0) : "material"};
+    }
+    if(notes.indexOf(q) > -1) return {hit: true, why: "in notes"};
+    if((rec.techFile && (rec.techFile.toyType || "").toLowerCase().indexOf(q) > -1)) {
+      return {hit: true, why: "in description"};
+    }
+    return {hit: false, why: ""};
+  }
+
+  function recordRow(id, rec, why){
     var counts = recordCounts(rec);
     var flag = "pending";
     if(counts.fail > 0) flag = "fail";
     else if(counts.pending === 0) flag = "done";
-    var flagText = {fail: "Has failing tests", pending: "Tests not yet recorded", done: "All tests recorded"}[flag];
     var row = document.createElement("div");
     row.className = "record-item" + (id === state.activeId ? " active" : "");
     var serial = recordSerial(rec);
     row.innerHTML =
-      '<span class="record-flag ' + flag + '" title="' + flagText + '"></span>' +
+      '<span class="record-flag ' + flag + '"></span>' +
       '<span class="record-main">' +
         '<span class="record-name">' + escapeHtml(recordLabel(rec, "Untitled test")) + '</span>' +
         '<span class="record-sub">' + escapeHtml(serial || fmtDate(rec.date)) + '</span>' +
+        (why ? '<span class="record-why">' + escapeHtml(why) + '</span>' : '') +
       '</span>' +
+      '<button class="icon-btn record-copy" title="Create a variation of this toy" aria-label="Duplicate as a variation">' + ICONS.copy + '</button>' +
       '<button class="icon-btn record-rename" title="Rename this record" aria-label="Rename record">' + ICONS.note + '</button>' +
       '<button class="icon-btn record-del" title="Delete this record" aria-label="Delete record">' + ICONS.trash + '</button>';
     row.addEventListener("click", function(e){
@@ -2192,21 +2491,38 @@
     row.querySelector(".record-rename").addEventListener("click", function(e){
       e.stopPropagation(); startRenameRecord(row, rec);
     });
+    row.querySelector(".record-copy").addEventListener("click", function(e){
+      e.stopPropagation(); duplicateRecord(rec);
+    });
     return row;
   }
 
   function renderRecordList(){
     var list = document.getElementById("recordList");
     list.innerHTML = "";
+    var q = searchQuery.trim().toLowerCase();
     var ids = Object.keys(state.records).sort(function(a,b){
       return state.records[a].createdAt - state.records[b].createdAt;
+    });
+    var why = {};
+    ids = ids.filter(function(id){
+      var r = searchRecord(state.records[id], q);
+      if(r.hit) why[id] = r.why;
+      return r.hit;
     });
     var live = ids.filter(function(id){ return !state.records[id].completedAt; });
     var done = ids.filter(function(id){ return !!state.records[id].completedAt; })
                   .sort(function(a,b){ return state.records[b].completedAt - state.records[a].completedAt; });
 
-    live.forEach(function(id){ list.appendChild(recordRow(id, state.records[id])); });
-    if(!live.length){
+    var hits = document.getElementById("railHits");
+    if(q){
+      hits.hidden = false;
+      hits.textContent = ids.length ? (ids.length + (ids.length === 1 ? " match" : " matches"))
+                                    : "No toys match “" + searchQuery.trim() + "”";
+    } else { hits.hidden = true; }
+
+    live.forEach(function(id){ list.appendChild(recordRow(id, state.records[id], why[id])); });
+    if(!live.length && !q){
       var none = document.createElement("div");
       none.className = "rail-empty";
       none.textContent = "Nothing in progress.";
@@ -2217,10 +2533,12 @@
     var doneBlock = document.getElementById("doneBlock");
     doneList.innerHTML = "";
     doneBlock.hidden = !done.length;
+    var liveLabel = document.getElementById("liveLabel");
+    if(liveLabel) liveLabel.hidden = !live.length;
     document.getElementById("doneCount").textContent = done.length;
     done.forEach(function(id){
       var rec = state.records[id];
-      var row = recordRow(id, rec);
+      var row = recordRow(id, rec, why[id]);
       row.classList.add("is-done");
       var sub = row.querySelector(".record-sub");
       sub.textContent = (recordSerial(rec) || recordLabel(rec, "")) + " · " +
@@ -2327,6 +2645,7 @@
     var sel = materialSelect(rec.materialId, function(id){
       rec.materialId = id;
       rec.updatedAt = Date.now();
+      assignSerialSuffix(rec);
       renderSerial(rec);
       updateTechAuto(rec);
       scheduleSave();
@@ -2376,6 +2695,32 @@
     renderDoneBar(rec);
   }
 
+  /* Your own file says documentation must be kept up to date — this is the nudge.
+     A year is the interval; a month before that it starts asking. */
+  function reviewChip(rec){
+    var wrap = document.createElement("span");
+    wrap.className = "review-chip";
+    var d = daysSince(rec.reviewedAt);
+    var overdue = reviewOverdue(rec);
+    wrap.dataset.state = overdue ? "overdue" : (reviewDue(rec) ? "due" : "ok");
+    var when = d < 1 ? "today" : (d === 1 ? "yesterday" : d + " days ago");
+    var label = document.createElement("span");
+    label.textContent = overdue ? "Review overdue — last checked " + when
+      : reviewDue(rec) ? "Review due soon — last checked " + when
+      : "Reviewed " + when;
+    wrap.appendChild(label);
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "review-btn";
+    btn.textContent = "Mark reviewed";
+    btn.addEventListener("click", function(){
+      rec.reviewedAt = Date.now(); rec.updatedAt = Date.now();
+      render(); scheduleSave();
+      showToast("Marked as reviewed today.");
+    });
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
   /* Filing a finished toy away, and telling you plainly what's left if it isn't. */
   function renderDoneBar(rec){
     var bar = document.getElementById("doneBar");
@@ -2389,6 +2734,7 @@
       badge.innerHTML = ICONS.check + " Completed " +
         escapeHtml(fmtDate(new Date(rec.completedAt).toISOString().slice(0, 10)));
       bar.appendChild(badge);
+      bar.appendChild(reviewChip(rec));
       var re = document.createElement("button");
       re.type = "button"; re.className = "btn";
       re.textContent = "Reopen";
@@ -2397,7 +2743,15 @@
         render(); scheduleSave();
         showToast("Reopened — it's back in your in-progress list.");
       });
-      bar.appendChild(re);
+      var pack2 = document.createElement("button");
+      pack2.type = "button"; pack2.className = "btn primary";
+      pack2.textContent = "Print evidence pack";
+      pack2.addEventListener("click", function(){ printPack(rec); });
+      var lbl2 = document.createElement("button");
+      lbl2.type = "button"; lbl2.className = "btn";
+      lbl2.textContent = "Print labels";
+      lbl2.addEventListener("click", function(){ printLabels(rec); });
+      bar.appendChild(pack2); bar.appendChild(lbl2); bar.appendChild(re);
       return;
     }
 
@@ -2407,6 +2761,19 @@
       ? "Everything's filled in. File this toy away so it's easy to find later."
       : "Still to do: <b>" + escapeHtml(r.blockers.join(" · ")) + "</b>";
     bar.appendChild(msg);
+
+    var pack = document.createElement("button");
+    pack.type = "button"; pack.className = "btn";
+    pack.textContent = "Print evidence pack";
+    pack.title = "Technical file, declaration, checklist and photos in one document";
+    pack.addEventListener("click", function(){ printPack(rec); });
+    bar.appendChild(pack);
+
+    var lbl = document.createElement("button");
+    lbl.type = "button"; lbl.className = "btn";
+    lbl.textContent = "Print labels";
+    lbl.addEventListener("click", function(){ printLabels(rec); });
+    bar.appendChild(lbl);
 
     var btn = document.createElement("button");
     btn.type = "button";
@@ -2574,37 +2941,49 @@
     return card;
   }
 
+  /* A photo with a caption is evidence; a photo without one is just a picture.
+     The caption prints beneath the image in the technical file. */
   function photoThumb(rec, it, photo, grid, photoToggle){
+    var cell = document.createElement("div");
+    cell.className = "photo-cell";
+
     var thumb = document.createElement("div");
     thumb.className = "photo-thumb";
     var img = document.createElement("img");
-    img.src = photo.src; img.alt = "Test evidence for " + it.id;
-    img.setAttribute("role", "button");
-    img.setAttribute("tabindex", "0");
-    img.title = "Open photo";
-    img.addEventListener("click", function(){ openLightbox(photo.src); });
-    img.addEventListener("keydown", function(e){
-      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openLightbox(photo.src); }
-    });
+    img.src = photo.src; img.alt = (photo.caption || "Test evidence for " + it.id);
+    img.addEventListener("click", function(){ openLightbox(photo.src, photo.caption); });
     var del = document.createElement("button");
     del.type = "button"; del.setAttribute("aria-label","Remove photo"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      confirmDialog("Remove this photo? This can't be undone.", "Remove").then(function(ok){
-        if(!ok) return;
-        var arr = rec.items[it.id].photos;
-        var idx = arr.findIndex(function(p){ return p.id === photo.id; });
-        if(idx > -1) arr.splice(idx,1);
-        thumb.remove();
-        photoToggle.innerHTML = ICONS.camera + " Photos" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
-        if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
-        rec.updatedAt = Date.now();
-        updateTechAuto(rec);
-        scheduleSave();
-      });
+      var arr = rec.items[it.id].photos;
+      var idx = arr.findIndex(function(p){ return p.id === photo.id; });
+      if(idx > -1) arr.splice(idx,1);
+      cell.remove();
+      photoToggle.innerHTML = ICONS.camera + " Photos" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
+      if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
+      rec.updatedAt = Date.now();
+      updateTechAuto(rec);
+      scheduleSave();
     });
     thumb.appendChild(img); thumb.appendChild(del);
-    return thumb;
+    cell.appendChild(thumb);
+
+    var cap = document.createElement("input");
+    cap.className = "photo-caption";
+    cap.type = "text";
+    cap.placeholder = "What it shows…";
+    cap.value = photo.caption || "";
+    cap.setAttribute("aria-label", "Caption for this photo");
+    cap.addEventListener("input", function(){
+      photo.caption = cap.value;
+      rec.updatedAt = Date.now();
+      scheduleSave();
+    });
+    cap.dataset.has = photo.caption ? "1" : "";
+    cap.addEventListener("input", function(){ cap.dataset.has = cap.value ? "1" : ""; });
+    cell.appendChild(cap);
+    return cell;
   }
 
   /* ================= Procedure checklist rendering ================= */
@@ -2660,28 +3039,18 @@
     del.type = "button"; del.setAttribute("aria-label", "Remove file"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      confirmDialog("Remove this file? This can't be undone.", "Remove").then(function(ok){
-        if(!ok) return;
-        var arr = rec.procedure[item.id].docs;
-        var idx = arr.findIndex(function(d){ return d.id === doc.id; });
-        if(idx > -1) arr.splice(idx, 1);
-        chip.remove();
-        filesToggle.innerHTML = ICONS.doc + " Files" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
-        if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
-        rec.updatedAt = Date.now();
-        updateTechAuto(rec);
-        scheduleSave();
-      });
+      var arr = rec.procedure[item.id].docs;
+      var idx = arr.findIndex(function(d){ return d.id === doc.id; });
+      if(idx > -1) arr.splice(idx, 1);
+      chip.remove();
+      filesToggle.innerHTML = ICONS.doc + " Files" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
+      if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
+      rec.updatedAt = Date.now();
+      updateTechAuto(rec);
+      scheduleSave();
     });
     chip.appendChild(del);
-    chip.setAttribute("role", "button");
-    chip.setAttribute("tabindex", "0");
-    chip.title = "Open " + doc.name;
     chip.addEventListener("click", function(){ openDocument(doc); });
-    chip.addEventListener("keydown", function(e){
-      if(e.target !== chip) return;
-      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openDocument(doc); }
-    });
     return chip;
   }
 
@@ -3000,27 +3369,18 @@
     thumb.className = "photo-thumb";
     var img = document.createElement("img");
     img.src = photo.src; img.alt = "Technical file image";
-    img.setAttribute("role", "button");
-    img.setAttribute("tabindex", "0");
-    img.title = "Open photo";
     img.addEventListener("click", function(){ openLightbox(photo.src); });
-    img.addEventListener("keydown", function(e){
-      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openLightbox(photo.src); }
-    });
     var del = document.createElement("button");
     del.type = "button"; del.setAttribute("aria-label", "Remove image"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      confirmDialog("Remove this image? This can't be undone.", "Remove").then(function(ok){
-        if(!ok) return;
-        var arr = rec.techFile.images[key];
-        var idx = arr.findIndex(function(p){ return p.id === photo.id; });
-        if(idx > -1) arr.splice(idx, 1);
-        thumb.remove();
-        rec.updatedAt = Date.now();
-        updateTfProgress(rec);
-        scheduleSave();
-      });
+      var arr = rec.techFile.images[key];
+      var idx = arr.findIndex(function(p){ return p.id === photo.id; });
+      if(idx > -1) arr.splice(idx, 1);
+      thumb.remove();
+      rec.updatedAt = Date.now();
+      updateTfProgress(rec);
+      scheduleSave();
     });
     thumb.appendChild(img); thumb.appendChild(del);
     return thumb;
@@ -3292,7 +3652,7 @@
     var stds = document.createElement("ul");
     stds.className = "tf-standards";
     STANDARDS.forEach(function(s){
-      var li = document.createElement("li"); li.textContent = "– " + s.ref + ":" + s.edition;
+      var li = document.createElement("li"); li.textContent = "– " + s;
       stds.appendChild(li);
     });
     tfKvRow(dl, "Self-verified to", stds);
@@ -3388,6 +3748,199 @@
     updateTechAuto(rec);
   }
 
+  /* ================= Printing: labels and the full evidence pack ================= */
+
+  /* A swing tag carries what the regulations ask for: the UKCA mark, who made it,
+     where, which model and batch, the age marking and the warning. */
+  function labelHtml(rec, batchNo){
+    var tf = rec.techFile || {};
+    var addr = oneLine(tf.address || prof("address") || "");
+    var warn = (tf.warnings || prof("warnings") || "").trim();
+    return '<div class="lbl">' +
+      '<div class="lbl-top">' +
+        '<span class="lbl-ukca">UKCA</span>' +
+        '<span class="lbl-biz">' + escapeHtml(rec.businessName || prof("businessName")) + '</span>' +
+      '</div>' +
+      '<div class="lbl-model">' + escapeHtml(recordLabel(rec, "")) + '</div>' +
+      '<div class="lbl-codes">' +
+        '<span>' + escapeHtml(recordSerial(rec) || "") + '</span>' +
+        (batchNo ? '<span>Batch ' + escapeHtml(batchNo) + '</span>' : '') +
+      '</div>' +
+      '<div class="lbl-age">' + escapeHtml(rec.ageRange || "") + '</div>' +
+      (warn ? '<div class="lbl-warn">' + escapeHtml(warn) + '</div>' : '') +
+      '<div class="lbl-addr">' + escapeHtml(addr) + '</div>' +
+    '</div>';
+  }
+
+  function printLabels(rec){
+    ensureBatchesShape(rec);
+    var batches = rec.batches || [];
+    promptDialog({
+      title: "Print labels",
+      hint: "A sheet of swing tags for " + recordLabel(rec, "this toy") +
+            ", filled in from this record. Cut along the lines.",
+      placeholder: "12",
+      value: "12",
+      okLabel: "Build sheet",
+      material: false
+    }).then(function(res){
+      if(!res) return;
+      var n = Math.max(1, Math.min(60, parseInt(res.name, 10) || 12));
+      var batchNo = batches.length ? batches[batches.length - 1].number : "";
+      var sheet = document.getElementById("labelSheet");
+      var html = "";
+      for(var i = 0; i < n; i++) html += labelHtml(rec, batchNo);
+      sheet.innerHTML = html;
+      printMode("labels", "Labels for " + recordLabel(rec, "this toy") +
+        (batchNo ? " · batch " + batchNo : "") + " — sent to print.");
+    });
+  }
+
+  /* Everything about one toy, in one print job, in the order someone would read it. */
+  function printPack(rec){
+    var prev = activeView;
+    renderTechFile(rec);
+    renderDeclaration(rec);
+    renderBatches(rec);
+    renderSections(rec);
+    renderProcedure(rec);
+    renderPrintHeader(rec);
+    /* Unfold everything so nothing is missing from the printed evidence. */
+    Array.prototype.forEach.call(document.querySelectorAll(".section[data-folded='1']"), function(el){
+      el.dataset.folded = "";
+      el.dataset.wasFolded = "1";
+    });
+    printMode("pack", "Evidence pack for " + recordLabel(rec, "this toy") + " — sent to print.", function(){
+      Array.prototype.forEach.call(document.querySelectorAll(".section[data-wasFolded='1'], .section[data-was-folded='1']"), function(el){
+        el.dataset.folded = "1";
+        delete el.dataset.wasFolded;
+      });
+      setView(prev);
+    });
+  }
+
+  /* Swap the page into a print-only arrangement, print, then put it back. */
+  function printMode(mode, toast, after){
+    var prevView = document.body.dataset.view;
+    document.body.dataset.printmode = mode;
+    var restored = false;
+    function restore(){
+      if(restored) return; restored = true;
+      document.body.dataset.printmode = "";
+      window.removeEventListener("afterprint", restore);
+      if(after) after();
+      else document.body.dataset.view = prevView;
+    }
+    window.addEventListener("afterprint", restore);
+    setTimeout(function(){
+      try{ window.print(); }
+      catch(e){ showToast("Printing isn't available here — open the app in your browser."); }
+      setTimeout(restore, 1500);
+    }, 60);
+    if(toast) showToast(toast);
+  }
+
+  /* ================= All toys — the state of everything at a glance ================= */
+  function renderOverview(){
+    var view = document.getElementById("allView");
+    view.innerHTML = "";
+    var ids = Object.keys(state.records).sort(function(a, b){
+      var A = state.records[a], B = state.records[b];
+      if(!!A.completedAt !== !!B.completedAt) return A.completedAt ? 1 : -1;
+      return B.updatedAt - A.updatedAt;
+    });
+
+    var tally = {total: ids.length, done: 0, fails: 0, noEvidence: 0, review: 0, toys: 0};
+    ids.forEach(function(id){
+      var r = state.records[id];
+      if(r.completedAt) tally.done++;
+      if(recordCounts(r).fail > 0) tally.fails++;
+      if(!tfEvidenceDocs(r).length) tally.noEvidence++;
+      if(reviewOverdue(r)) tally.review++;
+      tally.toys += batchTotals(r).toys;
+    });
+
+    var head = document.createElement("div");
+    head.className = "batch-head";
+    head.innerHTML = '<h2>All toys</h2>';
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn primary"; add.textContent = "+ New toy";
+    add.addEventListener("click", startNewRecord);
+    head.appendChild(add);
+    view.appendChild(head);
+
+    var stats = document.createElement("div");
+    stats.className = "ov-stats";
+    [
+      ["Toys", tally.total, ""],
+      ["Complete", tally.done, tally.done === tally.total && tally.total ? "good" : ""],
+      ["With failures", tally.fails, tally.fails ? "bad" : ""],
+      ["No EN71-3 evidence", tally.noEvidence, tally.noEvidence ? "warn" : ""],
+      ["Review overdue", tally.review, tally.review ? "warn" : ""],
+      ["Made & sold", tally.toys, ""]
+    ].forEach(function(t){
+      var el = document.createElement("div");
+      el.className = "ov-stat" + (t[2] ? " is-" + t[2] : "");
+      el.innerHTML = '<b>' + t[1] + '</b><span>' + t[0] + '</span>';
+      stats.appendChild(el);
+    });
+    view.appendChild(stats);
+
+    if(!ids.length){
+      var empty = document.createElement("div");
+      empty.className = "batch-empty";
+      empty.textContent = "No toys yet. Press New toy to start your first record.";
+      view.appendChild(empty);
+      return;
+    }
+
+    var scroll = document.createElement("div");
+    scroll.className = "batch-scroll";
+    var tbl = document.createElement("table");
+    tbl.className = "ov-table";
+    tbl.innerHTML = "<thead><tr><th>Toy</th><th>Serial</th><th>Tests</th><th>UKCA steps</th>" +
+      "<th>Tech file</th><th>EN71-3</th><th>Batches</th><th>Status</th></tr></thead>";
+    var body = document.createElement("tbody");
+
+    ids.forEach(function(id){
+      var r = state.records[id];
+      var c = recordCounts(r), proc = procedureCounts(r), tf = tfCompletion(r);
+      var bt = batchTotals(r), ev = tfEvidenceDocs(r).length;
+      var tr = document.createElement("tr");
+      tr.className = "ov-row";
+      var statusHtml = r.completedAt
+        ? '<span class="ov-pill good">Complete</span>'
+        : (c.fail ? '<span class="ov-pill bad">' + c.fail + ' failing</span>'
+                  : '<span class="ov-pill">In progress</span>');
+      if(reviewOverdue(r)) statusHtml += ' <span class="ov-pill warn">Review</span>';
+      tr.innerHTML =
+        '<td class="ov-name">' + escapeHtml(recordLabel(r, "Untitled test")) + '</td>' +
+        '<td class="mono">' + escapeHtml(recordSerial(r) || "—") + '</td>' +
+        '<td class="num' + (c.fail ? ' bad' : '') + '">' + (c.pass + c.fail + c.na) + '/' + TOTAL_ITEMS + '</td>' +
+        '<td class="num">' + proc.done + '/' + proc.total + '</td>' +
+        '<td class="num">' + tf.done + '/' + tf.total + '</td>' +
+        '<td class="num' + (ev ? '' : ' warn') + '">' + (ev ? ev + " file" + (ev === 1 ? "" : "s") : "none") + '</td>' +
+        '<td class="num">' + bt.batches + (bt.toys ? ' · ' + bt.toys : '') + '</td>' +
+        '<td>' + statusHtml + '</td>';
+      tr.addEventListener("click", function(){
+        state.activeId = id;
+        setView("checklist");
+        render(); scheduleSave();
+        window.scrollTo({top: 0, behavior: "smooth"});
+      });
+      body.appendChild(tr);
+    });
+    tbl.appendChild(body);
+    scroll.appendChild(tbl);
+    view.appendChild(scroll);
+
+    var note = document.createElement("p");
+    note.className = "tf-footnote";
+    note.style.marginTop = "12px";
+    note.textContent = "Tap any row to open that toy. Anything flagged here is worth clearing before you sell.";
+    view.appendChild(note);
+  }
+
   /* ================= Materials view ================= */
   function materialSelect(selectedId, onChange, emptyLabel){
     var sel = document.createElement("select");
@@ -3432,14 +3985,7 @@
       del.addEventListener("click", function(e){ e.stopPropagation(); onDelete(); });
       chip.appendChild(del);
     }
-    chip.setAttribute("role", "button");
-    chip.setAttribute("tabindex", "0");
-    chip.title = "Open " + doc.name;
     chip.addEventListener("click", function(){ openDocument(doc); });
-    chip.addEventListener("keydown", function(e){
-      if(e.target !== chip) return;
-      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openDocument(doc); }
-    });
     return chip;
   }
 
@@ -3454,13 +4000,10 @@
       grid.innerHTML = "";
       m.docs.forEach(function(d){
         grid.appendChild(plainDocChip(d, function(){
-          confirmDialog("Remove this file from the material? This can't be undone.", "Remove").then(function(ok){
-            if(!ok) return;
-            var idx = m.docs.findIndex(function(x){ return x.id === d.id; });
-            if(idx > -1) m.docs.splice(idx, 1);
-            paint();
-            onChange();
-          });
+          var idx = m.docs.findIndex(function(x){ return x.id === d.id; });
+          if(idx > -1) m.docs.splice(idx, 1);
+          paint();
+          onChange();
         }));
       });
     }
@@ -3721,7 +4264,7 @@
 
   function batchField(label, node, wide){
     var f = document.createElement("div");
-    f.className = "field" + (wide ? " wide" : "");
+    f.className = "field batch-field" + (wide ? " wide" : "");
     var l = document.createElement("label");
     l.textContent = label;
     f.appendChild(l); f.appendChild(node);
@@ -3840,7 +4383,7 @@
     totals.className = "batch-totals"; totals.id = "batchTotals";
     head.appendChild(totals);
     var add = document.createElement("button");
-    add.type = "button"; add.className = "btn primary";
+    add.type = "button"; add.className = "btn primary batch-add";
     add.textContent = "+ Add batch";
     add.addEventListener("click", function(){
       var mid = rec.materialId || "";
@@ -4076,7 +4619,7 @@
     var addr = document.createElement("input");
     addr.className = "tf-inline-input";
     addr.placeholder = "Address of the manufacturer";
-    addr.value = rec.techFile.address || rec.techFile.registeredAddress || "";
+    addr.value = oneLine(rec.techFile.address || rec.techFile.registeredAddress || "");
     addr.addEventListener("input", function(){
       rec.techFile.address = addr.value;
       rec.updatedAt = Date.now();
@@ -4125,12 +4668,11 @@
 
     var table = document.createElement("table");
     table.className = "doc-standards";
-    var stdRows = STANDARDS.map(function(s){
-      return "<tr><td>" + s.ref + "</td><td>" + s.title + "</td><td>" + s.edition + "</td></tr>";
-    }).join("");
     table.innerHTML =
       "<thead><tr><th>Ref. no.</th><th>Title</th><th>Edition</th></tr></thead><tbody>" +
-      stdRows +
+      "<tr><td>BS EN71-1</td><td>Safety of Toys — Part 1: Mechanical and physical properties</td><td>2026</td></tr>" +
+      "<tr><td>BS EN71-2</td><td>Safety of Toys — Part 2: Flammability</td><td>2020+A1:2025</td></tr>" +
+      "<tr><td>BS EN71-3</td><td>Safety of Toys — Part 3: Migration of certain elements</td><td>2019+A2:2024</td></tr>" +
       "</tbody>";
     body.appendChild(table);
 
@@ -4207,7 +4749,8 @@
     tech:      {tab:"tabTech",      pane:"techView",      print:"Print technical file"},
     doc:       {tab:"tabDoc",       pane:"docView",       print:"Print declaration"},
     batch:     {tab:"tabBatch",     pane:"batchView",     print:"Print batch register"},
-    materials: {tab:"tabMat",       pane:"matView",       print:"Print materials"}
+    materials: {tab:"tabMat",       pane:"matView",       print:"Print materials"},
+    all:       {tab:"tabAll",       pane:"allView",       print:"Print overview"}
   };
 
   function setView(view){
@@ -4224,6 +4767,7 @@
     else if(activeView === "doc"){ renderDeclaration(rec); }
     else if(activeView === "batch"){ renderBatches(rec); }
     else if(activeView === "materials"){ renderMaterials(); }
+    else if(activeView === "all"){ renderOverview(); }
     else { renderSecNav(rec); }
     document.getElementById("btnPrint").textContent = VIEWS[activeView].print;
   }
@@ -4396,10 +4940,12 @@
     if(activeView !== "doc") document.getElementById("docView").innerHTML = "";
     if(activeView !== "batch") document.getElementById("batchView").innerHTML = "";
     if(activeView !== "materials") document.getElementById("matView").innerHTML = "";
+    if(activeView !== "all") document.getElementById("allView").innerHTML = "";
     if(activeView === "tech") renderTechFile(rec);
     else if(activeView === "doc") renderDeclaration(rec);
     else if(activeView === "batch") renderBatches(rec);
     else if(activeView === "materials") renderMaterials();
+    else if(activeView === "all") renderOverview();
     renderSecNav(rec);
     renderProgress(rec);
     renderPrintHeader(rec);
@@ -4410,6 +4956,7 @@
   document.getElementById("tabDoc").addEventListener("click", function(){ setView("doc"); });
   document.getElementById("tabBatch").addEventListener("click", function(){ setView("batch"); });
   document.getElementById("tabMat").addEventListener("click", function(){ setView("materials"); });
+  document.getElementById("tabAll").addEventListener("click", function(){ setView("all"); });
 
   /* ================= Global field bindings ================= */
   ["businessName","toyPrototype","ageRange","tester"].forEach(function(f){
@@ -4422,7 +4969,7 @@
         if(nameSpan) nameSpan.textContent = recordLabel(rec, "Untitled test");
       }
       renderPrintHeader(rec);
-      if(f === "toyPrototype") renderSerial(rec);
+      if(f === "toyPrototype"){ assignSerialSuffix(rec); renderSerial(rec); }
       updateTechAuto(rec);
       scheduleSave();
     });
@@ -4446,6 +4993,7 @@
       if(res.materialId) r.materialId = res.materialId;
       applyDefaults(r);
       state.records[r.id] = r;
+      assignSerialSuffix(r);
       state.activeId = r.id;
       setView("checklist");
       render();
@@ -4456,6 +5004,7 @@
     });
   }
   document.getElementById("btnNewTest").addEventListener("click", startNewRecord);
+  document.getElementById("btnNewToyFab").addEventListener("click", startNewRecord);
 
   document.getElementById("btnPrint").addEventListener("click", function(){
     var handled = false;
@@ -4478,8 +5027,10 @@
   });
 
   /* ================= Lightbox ================= */
-  function openLightbox(src){
+  function openLightbox(src, caption){
     document.getElementById("lightboxImg").src = src;
+    var cap = document.getElementById("lightboxCap");
+    if(cap){ cap.textContent = caption || ""; cap.hidden = !caption; }
     document.getElementById("lightbox").classList.add("open");
   }
   function closeLightbox(){
@@ -4537,6 +5088,37 @@
     var btn = document.getElementById("btnMenu");
     if(btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
   }
+  function initSearch(){
+    var input = document.getElementById("recordSearch");
+    var clear = document.getElementById("recordSearchClear");
+    function apply(){
+      searchQuery = input.value;
+      clear.hidden = !searchQuery;
+      renderRecordList();
+    }
+    input.addEventListener("input", apply);
+    input.addEventListener("keydown", function(e){
+      if(e.key === "Escape"){ input.value = ""; apply(); input.blur(); }
+      /* Enter opens the only match — the common case when you paste a batch number. */
+      if(e.key === "Enter"){
+        var first = document.querySelector("#recordList .record-item, #doneList .record-item");
+        if(first) first.click();
+      }
+    });
+    clear.addEventListener("click", function(){ input.value = ""; apply(); input.focus(); });
+
+    document.addEventListener("keydown", function(e){
+      var t = e.target;
+      var typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+      if(typing) return;
+      if(e.key === "/" || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")){
+        e.preventDefault();
+        if(window.innerWidth <= 900) setDrawer(true);
+        input.focus(); input.select();
+      }
+    });
+  }
+
   function initDrawer(){
     document.getElementById("btnMenu").addEventListener("click", function(){
       setDrawer(document.body.dataset.drawer !== "open");
@@ -4550,7 +5132,7 @@
     document.getElementById("rail").addEventListener("click", function(e){
       if(window.innerWidth > 900) return;
       var hit = e.target.closest("a, .record-item, .newtest-btn");
-      if(hit && !e.target.closest(".record-del, .record-rename")) setDrawer(false);
+      if(hit && !e.target.closest(".record-del, .record-rename, .record-copy, .record-reopen")) setDrawer(false);
     });
   }
 
@@ -4600,11 +5182,6 @@
     });
     document.getElementById("profileOverlay").addEventListener("click", function(e){
       if(e.target.id === "profileOverlay") document.getElementById("profileOverlay").classList.remove("open");
-    });
-    document.addEventListener("keydown", function(e){
-      if(e.key === "Escape" && document.getElementById("profileOverlay").classList.contains("open")){
-        document.getElementById("profileOverlay").classList.remove("open");
-      }
     });
     document.getElementById("profileApply").addEventListener("click", function(){
       document.getElementById("profileOverlay").classList.remove("open");
@@ -4662,6 +5239,10 @@
     busy: false,
     pushTimer: null
   };
+
+  /* GitHub's API sends Access-Control-Allow-Origin: *, so this works from a hosted
+     address, an installed app and a file opened straight off disk alike. */
+  function cloudSupported(){ return true; }
 
   function loadCloudCfg(){
     try{
@@ -4788,6 +5369,7 @@
   }
 
   function refreshCloudUi(){
+    document.getElementById("cloudUnsupported").hidden = true;
     document.getElementById("cloudRepo").value = cloud.cfg.repo || "";
     document.getElementById("cloudToken").value = cloud.cfg.token || "";
     document.getElementById("cloudDevice").value = cloud.cfg.device || "";
@@ -5042,9 +5624,6 @@
   function cloudErrText(err){
     var m = (err && err.message) || String(err);
     if(/Failed to fetch|NetworkError/i.test(m)) return "no connection";
-    if((err && err.status === 413) || /too large|exceeds the maximum|payload too large/i.test(m)){
-      return "too large to save with all photos — remove a few photos or start a new record";
-    }
     return m.slice(0, 140);
   }
 
@@ -5082,9 +5661,6 @@
     document.getElementById("cloudClose").addEventListener("click", closeCloudPanel);
     document.getElementById("cloudOverlay").addEventListener("click", function(e){
       if(e.target.id === "cloudOverlay") closeCloudPanel();
-    });
-    document.addEventListener("keydown", function(e){
-      if(e.key === "Escape" && document.getElementById("cloudOverlay").classList.contains("open")) closeCloudPanel();
     });
 
     function bindCfg(id, key, transform){
@@ -5241,13 +5817,10 @@
     document.body.dataset.view = "checklist";
     render();
     initDrawer();
+    initSearch();
     initProfile();
     initCloud();
     setSaveChip(artifactAvailable ? "saved" : "local", artifactAvailable ? "Saved" : "Saved to this browser");
-    var runtimeNote = document.getElementById("runtimeNote");
-    if(runtimeNote && artifactAvailable){
-      runtimeNote.innerHTML = 'Data in this tool is saved automatically to this artifact. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.';
-    }
   });
 
   /* Installed-app plumbing. Registers only when served over http(s) from its own
