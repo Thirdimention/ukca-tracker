@@ -1039,26 +1039,6 @@
     background:var(--surface-alt); padding:12px 14px; border-radius:0 7px 7px 0;
   }
 
-  /* ---------- Labels ---------- */
-  .label-sheet{display:none;}
-  .lbl{
-    border:1px dashed #999; border-radius:6px; padding:8px 9px;
-    display:flex; flex-direction:column; gap:3px; break-inside:avoid;
-    font-family:var(--font-body); color:#000; background:#fff;
-    height:100%; box-sizing:border-box;
-  }
-  .lbl-top{display:flex; align-items:center; gap:7px;}
-  .lbl-ukca{
-    font-family:var(--font-display); font-weight:700; font-size:14px; letter-spacing:.04em;
-    border:1.6px solid #000; border-radius:3px; padding:0 4px; line-height:1.35;
-  }
-  .lbl-biz{font-size:10px; font-weight:600; overflow-wrap:anywhere;}
-  .lbl-model{font-size:11.5px; font-weight:700; line-height:1.25;}
-  .lbl-codes{display:flex; gap:8px; flex-wrap:wrap; font-family:var(--font-mono); font-size:8.5px;}
-  .lbl-age{font-size:10px; font-weight:700;}
-  .lbl-warn{font-size:7.5px; line-height:1.3;}
-  .lbl-addr{font-size:6.8px; color:#333; margin-top:auto; line-height:1.3;}
-
   /* ---------- Print header (hidden on screen) ---------- */
   .print-header{display:none;}
 
@@ -1101,13 +1081,6 @@
     .item-notes textarea, .comments-box textarea{border:1px solid #bbb;}
     .photo-thumb{cursor:default;}
     .photo-zone[hidden][data-has="1"]{display:block !important;}
-
-    /* Label sheet: nothing but the tags. */
-    body[data-printmode="labels"] .app{display:none !important;}
-    body[data-printmode="labels"] .label-sheet{
-      display:grid !important; grid-template-columns:repeat(3, 1fr);
-      grid-auto-rows:34mm; gap:4mm;
-    }
 
     /* Evidence pack: every part of the toy's file, each starting a fresh page. */
     body[data-printmode="pack"] #checklistView,
@@ -1296,7 +1269,6 @@
   <span>New toy</span>
 </button>
 
-<div class="label-sheet" id="labelSheet"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -2747,11 +2719,7 @@
       pack2.type = "button"; pack2.className = "btn primary";
       pack2.textContent = "Print evidence pack";
       pack2.addEventListener("click", function(){ printPack(rec); });
-      var lbl2 = document.createElement("button");
-      lbl2.type = "button"; lbl2.className = "btn";
-      lbl2.textContent = "Print labels";
-      lbl2.addEventListener("click", function(){ printLabels(rec); });
-      bar.appendChild(pack2); bar.appendChild(lbl2); bar.appendChild(re);
+      bar.appendChild(pack2); bar.appendChild(re);
       return;
     }
 
@@ -2768,12 +2736,6 @@
     pack.title = "Technical file, declaration, checklist and photos in one document";
     pack.addEventListener("click", function(){ printPack(rec); });
     bar.appendChild(pack);
-
-    var lbl = document.createElement("button");
-    lbl.type = "button"; lbl.className = "btn";
-    lbl.textContent = "Print labels";
-    lbl.addEventListener("click", function(){ printLabels(rec); });
-    bar.appendChild(lbl);
 
     var btn = document.createElement("button");
     btn.type = "button";
@@ -3748,53 +3710,7 @@
     updateTechAuto(rec);
   }
 
-  /* ================= Printing: labels and the full evidence pack ================= */
-
-  /* A swing tag carries what the regulations ask for: the UKCA mark, who made it,
-     where, which model and batch, the age marking and the warning. */
-  function labelHtml(rec, batchNo){
-    var tf = rec.techFile || {};
-    var addr = oneLine(tf.address || prof("address") || "");
-    var warn = (tf.warnings || prof("warnings") || "").trim();
-    return '<div class="lbl">' +
-      '<div class="lbl-top">' +
-        '<span class="lbl-ukca">UKCA</span>' +
-        '<span class="lbl-biz">' + escapeHtml(rec.businessName || prof("businessName")) + '</span>' +
-      '</div>' +
-      '<div class="lbl-model">' + escapeHtml(recordLabel(rec, "")) + '</div>' +
-      '<div class="lbl-codes">' +
-        '<span>' + escapeHtml(recordSerial(rec) || "") + '</span>' +
-        (batchNo ? '<span>Batch ' + escapeHtml(batchNo) + '</span>' : '') +
-      '</div>' +
-      '<div class="lbl-age">' + escapeHtml(rec.ageRange || "") + '</div>' +
-      (warn ? '<div class="lbl-warn">' + escapeHtml(warn) + '</div>' : '') +
-      '<div class="lbl-addr">' + escapeHtml(addr) + '</div>' +
-    '</div>';
-  }
-
-  function printLabels(rec){
-    ensureBatchesShape(rec);
-    var batches = rec.batches || [];
-    promptDialog({
-      title: "Print labels",
-      hint: "A sheet of swing tags for " + recordLabel(rec, "this toy") +
-            ", filled in from this record. Cut along the lines.",
-      placeholder: "12",
-      value: "12",
-      okLabel: "Build sheet",
-      material: false
-    }).then(function(res){
-      if(!res) return;
-      var n = Math.max(1, Math.min(60, parseInt(res.name, 10) || 12));
-      var batchNo = batches.length ? batches[batches.length - 1].number : "";
-      var sheet = document.getElementById("labelSheet");
-      var html = "";
-      for(var i = 0; i < n; i++) html += labelHtml(rec, batchNo);
-      sheet.innerHTML = html;
-      printMode("labels", "Labels for " + recordLabel(rec, "this toy") +
-        (batchNo ? " · batch " + batchNo : "") + " — sent to print.");
-    });
-  }
+  /* ================= Printing: the full evidence pack ================= */
 
   /* Everything about one toy, in one print job, in the order someone would read it. */
   function printPack(rec){
