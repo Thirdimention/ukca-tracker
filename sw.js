@@ -40,8 +40,10 @@ self.addEventListener("fetch", function(event){
   if(req.mode === "navigate"){
     event.respondWith(
       fetch(req).then(function(res){
-        var copy = res.clone();
-        caches.open(CACHE).then(function(c){ c.put("./index.html", copy); });
+        if(res && res.ok){
+          var copy = res.clone();
+          caches.open(CACHE).then(function(c){ c.put("./index.html", copy); });
+        }
         return res;
       }).catch(function(){
         return caches.match("./index.html").then(function(hit){
@@ -52,16 +54,20 @@ self.addEventListener("fetch", function(event){
     return;
   }
 
-  /* Everything else: cache first, it never changes between releases. */
+  /* Everything else: answer from cache immediately for speed and offline use, but
+     always refresh the cache from the network in the background (stale-while-
+     revalidate) so an updated icon or manifest is picked up on the next fetch
+     without needing CACHE bumped by hand. */
   event.respondWith(
     caches.match(req).then(function(hit){
-      return hit || fetch(req).then(function(res){
+      var network = fetch(req).then(function(res){
         if(res && res.status === 200 && res.type === "basic"){
           var copy = res.clone();
           caches.open(CACHE).then(function(c){ c.put(req, copy); });
         }
         return res;
-      }).catch(function(){ return hit; });
+      }).catch(function(){ return null; });
+      return hit || network;
     })
   );
 });

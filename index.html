@@ -1105,7 +1105,7 @@
 
   <div class="disclaimer">
     <p><b>Self-verification tool, not certification.</b> This tracker is a working aid for recording your own EN71-1 physical &amp; mechanical testing as part of a UKCA/CE technical file. It does not replace professional advice, and it is not a substitute for third-party test house certification where that is required. Clause references are EN71-1 section numbers, shown for cross-referencing only. If you are unsure whether your toy meets requirements, consult your local Trading Standards body or an accredited toy-testing laboratory — responsibility for product safety and compliance rests with the manufacturer.</p>
-    <p class="runtime-note">Data in this tool is saved automatically to this artifact. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.</p>
+    <p class="runtime-note" id="runtimeNote">Data in this tool is saved automatically to this browser. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.</p>
   </div>
 </div>
 
@@ -1114,10 +1114,10 @@
   <img id="lightboxImg" src="" alt="Test evidence photo" />
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="modal-overlay" id="promptOverlay">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
     <h3 id="promptTitle" class="prompt-title">New toy</h3>
     <p class="prompt-hint" id="promptHint"></p>
     <div class="cloud-field">
@@ -1136,8 +1136,8 @@
 </div>
 
 <div class="modal-overlay" id="profileOverlay">
-  <div class="cloud-box">
-    <h3>My details</h3>
+  <div class="cloud-box" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <h3 id="profileTitle">My details</h3>
     <p class="cloud-sub">Your business details and the answers that are the same on every toy. Filled into any blank field on every record, old and new. These are stored with your data — never in the app file — so the app itself stays safe to host publicly.</p>
     <div id="profileFields"></div>
     <div class="cloud-actions" style="margin-top:16px;">
@@ -1152,11 +1152,9 @@
 </div>
 
 <div class="modal-overlay" id="cloudOverlay">
-  <div class="cloud-box">
-    <h3>Cloud backup</h3>
+  <div class="cloud-box" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
+    <h3 id="cloudTitle">Cloud backup</h3>
     <p class="cloud-sub">Keeps one copy of everything — records, materials, batches, photos and certificates — in a private GitHub repository, so every device shares the same data and every save is kept as a dated version you can go back to.</p>
-
-    <div class="cloud-warn" id="cloudUnsupported" hidden></div>
 
     <div class="cloud-status" id="cloudStatus" data-state="off">
       <span class="cloud-dot"></span>
@@ -1313,7 +1311,14 @@
   var TOTAL_PROC_ITEMS = PROCEDURE_PHASES.reduce(function(n,p){ return n + p.items.length; }, 0);
 
   /* ================= Data model: Technical File ================= */
-  var STANDARDS = ["BS EN71-1:2026", "BS EN71-2:2020+A1:2025", "BS EN71-3:2019+A2:2024"];
+  /* Single source of truth for the three standards' editions — the technical file's
+     "Self-verified to" list and the Declaration of Conformity's standards table both
+     derive from this, so an edition update can't leave the two documents disagreeing. */
+  var STANDARDS = [
+    {ref:"BS EN71-1", title:"Safety of Toys — Part 1: Mechanical and physical properties", edition:"2026"},
+    {ref:"BS EN71-2", title:"Safety of Toys — Part 2: Flammability", edition:"2020+A1:2025"},
+    {ref:"BS EN71-3", title:"Safety of Toys — Part 3: Migration of certain elements", edition:"2019+A2:2024"}
+  ];
 
   /* Block types: static (auto prose), text (saved textarea), images (saved photo zone),
      auto (computed block rendered by name). Every {model}/{business}/{age}/{ref}/{docref}
@@ -1785,6 +1790,9 @@
   }
 
   function tryFetchState(){
+    /* data/state.json only ever exists inside the Claude-artifact runtime — skip
+       the guaranteed-404 network call on every other deployment. */
+    if(!artifactAvailable) return Promise.resolve(null);
     return fetch("data/state.json", {cache:"no-store"}).then(function(res){
       if(!res.ok) return null;
       return res.json().then(function(j){ return (j && j.records) ? j : null; });
@@ -1810,11 +1818,15 @@
   function performSave(){
     var json = stateSignature();
     pendingLocalEdits = false;
-    localBackup();
+    var localPromise = localBackup();
     cloudMaybePush();
     if(json === lastSavedJSON){ setSaveChip("saved", "Saved"); return; }
     if(!artifactAvailable || !artifactNS){
-      setSaveChip("local", "Saved to this browser");
+      /* Wait for the actual write before claiming success — localBackup's own
+         catch already raises the error chip/toast when both stores fail. */
+      localPromise.then(function(result){
+        if(result.idb || result.ls) setSaveChip("local", "Saved to this browser");
+      });
       lastSavedJSON = json;
       return;
     }
@@ -1934,10 +1946,11 @@
 
         if(!data.records) throw new Error("bad shape");
         var incoming = Object.keys(data.records).length;
+        var incomingMats = Array.isArray(data.materials) ? data.materials.length : 0;
+        if(!incoming && !incomingMats) throw new Error("empty backup");
         confirmDialog(
-          "Restore " + incoming + " test record(s)" +
-          (Array.isArray(data.materials) && data.materials.length
-            ? " and " + data.materials.length + " material(s)" : "") +
+          "Restore " + incoming + " test record" + (incoming === 1 ? "" : "s") +
+          (incomingMats ? " and " + incomingMats + " material" + (incomingMats === 1 ? "" : "s") : "") +
           " from this backup? Anything already here with a matching ID is replaced by the backup's version.",
           "Restore"
         ).then(function(ok){
@@ -2150,11 +2163,12 @@
     var flag = "pending";
     if(counts.fail > 0) flag = "fail";
     else if(counts.pending === 0) flag = "done";
+    var flagText = {fail: "Has failing tests", pending: "Tests not yet recorded", done: "All tests recorded"}[flag];
     var row = document.createElement("div");
     row.className = "record-item" + (id === state.activeId ? " active" : "");
     var serial = recordSerial(rec);
     row.innerHTML =
-      '<span class="record-flag ' + flag + '"></span>' +
+      '<span class="record-flag ' + flag + '" title="' + flagText + '"></span>' +
       '<span class="record-main">' +
         '<span class="record-name">' + escapeHtml(recordLabel(rec, "Untitled test")) + '</span>' +
         '<span class="record-sub">' + escapeHtml(serial || fmtDate(rec.date)) + '</span>' +
@@ -2565,20 +2579,29 @@
     thumb.className = "photo-thumb";
     var img = document.createElement("img");
     img.src = photo.src; img.alt = "Test evidence for " + it.id;
+    img.setAttribute("role", "button");
+    img.setAttribute("tabindex", "0");
+    img.title = "Open photo";
     img.addEventListener("click", function(){ openLightbox(photo.src); });
+    img.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openLightbox(photo.src); }
+    });
     var del = document.createElement("button");
     del.type = "button"; del.setAttribute("aria-label","Remove photo"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      var arr = rec.items[it.id].photos;
-      var idx = arr.findIndex(function(p){ return p.id === photo.id; });
-      if(idx > -1) arr.splice(idx,1);
-      thumb.remove();
-      photoToggle.innerHTML = ICONS.camera + " Photos" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
-      if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
-      rec.updatedAt = Date.now();
-      updateTechAuto(rec);
-      scheduleSave();
+      confirmDialog("Remove this photo? This can't be undone.", "Remove").then(function(ok){
+        if(!ok) return;
+        var arr = rec.items[it.id].photos;
+        var idx = arr.findIndex(function(p){ return p.id === photo.id; });
+        if(idx > -1) arr.splice(idx,1);
+        thumb.remove();
+        photoToggle.innerHTML = ICONS.camera + " Photos" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
+        if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
+        rec.updatedAt = Date.now();
+        updateTechAuto(rec);
+        scheduleSave();
+      });
     });
     thumb.appendChild(img); thumb.appendChild(del);
     return thumb;
@@ -2637,18 +2660,28 @@
     del.type = "button"; del.setAttribute("aria-label", "Remove file"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      var arr = rec.procedure[item.id].docs;
-      var idx = arr.findIndex(function(d){ return d.id === doc.id; });
-      if(idx > -1) arr.splice(idx, 1);
-      chip.remove();
-      filesToggle.innerHTML = ICONS.doc + " Files" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
-      if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
-      rec.updatedAt = Date.now();
-      updateTechAuto(rec);
-      scheduleSave();
+      confirmDialog("Remove this file? This can't be undone.", "Remove").then(function(ok){
+        if(!ok) return;
+        var arr = rec.procedure[item.id].docs;
+        var idx = arr.findIndex(function(d){ return d.id === doc.id; });
+        if(idx > -1) arr.splice(idx, 1);
+        chip.remove();
+        filesToggle.innerHTML = ICONS.doc + " Files" + (arr.length ? '<span class="count">' + arr.length + '</span>' : "");
+        if(grid.parentElement) grid.parentElement.dataset.has = arr.length ? "1" : "";
+        rec.updatedAt = Date.now();
+        updateTechAuto(rec);
+        scheduleSave();
+      });
     });
     chip.appendChild(del);
+    chip.setAttribute("role", "button");
+    chip.setAttribute("tabindex", "0");
+    chip.title = "Open " + doc.name;
     chip.addEventListener("click", function(){ openDocument(doc); });
+    chip.addEventListener("keydown", function(e){
+      if(e.target !== chip) return;
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openDocument(doc); }
+    });
     return chip;
   }
 
@@ -2967,18 +3000,27 @@
     thumb.className = "photo-thumb";
     var img = document.createElement("img");
     img.src = photo.src; img.alt = "Technical file image";
+    img.setAttribute("role", "button");
+    img.setAttribute("tabindex", "0");
+    img.title = "Open photo";
     img.addEventListener("click", function(){ openLightbox(photo.src); });
+    img.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openLightbox(photo.src); }
+    });
     var del = document.createElement("button");
     del.type = "button"; del.setAttribute("aria-label", "Remove image"); del.innerHTML = ICONS.close;
     del.addEventListener("click", function(e){
       e.stopPropagation();
-      var arr = rec.techFile.images[key];
-      var idx = arr.findIndex(function(p){ return p.id === photo.id; });
-      if(idx > -1) arr.splice(idx, 1);
-      thumb.remove();
-      rec.updatedAt = Date.now();
-      updateTfProgress(rec);
-      scheduleSave();
+      confirmDialog("Remove this image? This can't be undone.", "Remove").then(function(ok){
+        if(!ok) return;
+        var arr = rec.techFile.images[key];
+        var idx = arr.findIndex(function(p){ return p.id === photo.id; });
+        if(idx > -1) arr.splice(idx, 1);
+        thumb.remove();
+        rec.updatedAt = Date.now();
+        updateTfProgress(rec);
+        scheduleSave();
+      });
     });
     thumb.appendChild(img); thumb.appendChild(del);
     return thumb;
@@ -3250,7 +3292,7 @@
     var stds = document.createElement("ul");
     stds.className = "tf-standards";
     STANDARDS.forEach(function(s){
-      var li = document.createElement("li"); li.textContent = "– " + s;
+      var li = document.createElement("li"); li.textContent = "– " + s.ref + ":" + s.edition;
       stds.appendChild(li);
     });
     tfKvRow(dl, "Self-verified to", stds);
@@ -3390,7 +3432,14 @@
       del.addEventListener("click", function(e){ e.stopPropagation(); onDelete(); });
       chip.appendChild(del);
     }
+    chip.setAttribute("role", "button");
+    chip.setAttribute("tabindex", "0");
+    chip.title = "Open " + doc.name;
     chip.addEventListener("click", function(){ openDocument(doc); });
+    chip.addEventListener("keydown", function(e){
+      if(e.target !== chip) return;
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openDocument(doc); }
+    });
     return chip;
   }
 
@@ -3405,10 +3454,13 @@
       grid.innerHTML = "";
       m.docs.forEach(function(d){
         grid.appendChild(plainDocChip(d, function(){
-          var idx = m.docs.findIndex(function(x){ return x.id === d.id; });
-          if(idx > -1) m.docs.splice(idx, 1);
-          paint();
-          onChange();
+          confirmDialog("Remove this file from the material? This can't be undone.", "Remove").then(function(ok){
+            if(!ok) return;
+            var idx = m.docs.findIndex(function(x){ return x.id === d.id; });
+            if(idx > -1) m.docs.splice(idx, 1);
+            paint();
+            onChange();
+          });
         }));
       });
     }
@@ -4073,11 +4125,12 @@
 
     var table = document.createElement("table");
     table.className = "doc-standards";
+    var stdRows = STANDARDS.map(function(s){
+      return "<tr><td>" + s.ref + "</td><td>" + s.title + "</td><td>" + s.edition + "</td></tr>";
+    }).join("");
     table.innerHTML =
       "<thead><tr><th>Ref. no.</th><th>Title</th><th>Edition</th></tr></thead><tbody>" +
-      "<tr><td>BS EN71-1</td><td>Safety of Toys — Part 1: Mechanical and physical properties</td><td>2026</td></tr>" +
-      "<tr><td>BS EN71-2</td><td>Safety of Toys — Part 2: Flammability</td><td>2020+A1:2025</td></tr>" +
-      "<tr><td>BS EN71-3</td><td>Safety of Toys — Part 3: Migration of certain elements</td><td>2019+A2:2024</td></tr>" +
+      stdRows +
       "</tbody>";
     body.appendChild(table);
 
@@ -4548,6 +4601,11 @@
     document.getElementById("profileOverlay").addEventListener("click", function(e){
       if(e.target.id === "profileOverlay") document.getElementById("profileOverlay").classList.remove("open");
     });
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape" && document.getElementById("profileOverlay").classList.contains("open")){
+        document.getElementById("profileOverlay").classList.remove("open");
+      }
+    });
     document.getElementById("profileApply").addEventListener("click", function(){
       document.getElementById("profileOverlay").classList.remove("open");
       applyProfileEverywhere();
@@ -4604,10 +4662,6 @@
     busy: false,
     pushTimer: null
   };
-
-  /* GitHub's API sends Access-Control-Allow-Origin: *, so this works from a hosted
-     address, an installed app and a file opened straight off disk alike. */
-  function cloudSupported(){ return true; }
 
   function loadCloudCfg(){
     try{
@@ -4734,7 +4788,6 @@
   }
 
   function refreshCloudUi(){
-    document.getElementById("cloudUnsupported").hidden = true;
     document.getElementById("cloudRepo").value = cloud.cfg.repo || "";
     document.getElementById("cloudToken").value = cloud.cfg.token || "";
     document.getElementById("cloudDevice").value = cloud.cfg.device || "";
@@ -4989,6 +5042,9 @@
   function cloudErrText(err){
     var m = (err && err.message) || String(err);
     if(/Failed to fetch|NetworkError/i.test(m)) return "no connection";
+    if((err && err.status === 413) || /too large|exceeds the maximum|payload too large/i.test(m)){
+      return "too large to save with all photos — remove a few photos or start a new record";
+    }
     return m.slice(0, 140);
   }
 
@@ -5026,6 +5082,9 @@
     document.getElementById("cloudClose").addEventListener("click", closeCloudPanel);
     document.getElementById("cloudOverlay").addEventListener("click", function(e){
       if(e.target.id === "cloudOverlay") closeCloudPanel();
+    });
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape" && document.getElementById("cloudOverlay").classList.contains("open")) closeCloudPanel();
     });
 
     function bindCfg(id, key, transform){
@@ -5185,6 +5244,10 @@
     initProfile();
     initCloud();
     setSaveChip(artifactAvailable ? "saved" : "local", artifactAvailable ? "Saved" : "Saved to this browser");
+    var runtimeNote = document.getElementById("runtimeNote");
+    if(runtimeNote && artifactAvailable){
+      runtimeNote.innerHTML = 'Data in this tool is saved automatically to this artifact. Use <b>Backup</b> occasionally to keep a downloaded copy, and <b>Print record</b> to save a finished record into your technical file.';
+    }
   });
 
   /* Installed-app plumbing. Registers only when served over http(s) from its own
