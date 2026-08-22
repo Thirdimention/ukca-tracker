@@ -1256,6 +1256,15 @@
     {key:"traceability", label:"Traceability",  ph:"How each toy traces back to its record", multi:true}
   ];
 
+  /* Recognises a bare details file — one saved before the wrapper existed, or hand-made. */
+  function looksLikeProfile(obj){
+    if(!obj || typeof obj !== "object" || obj.records) return false;
+    for(var i = 0; i < PROFILE_FIELDS.length; i++){
+      if(typeof obj[PROFILE_FIELDS[i].key] === "string") return true;
+    }
+    return false;
+  }
+
   function newProfile(){
     var p = {};
     PROFILE_FIELDS.forEach(function(f){ p[f.key] = ""; });
@@ -1681,20 +1690,51 @@
   /* ================= Downloads capability ================= */
   var downloadsNS = null;
   function initDownloads(){
-    if(!window.claude || typeof window.claude.use !== "function"){
-      document.getElementById("btnBackup").hidden = true;
-      return Promise.resolve();
+    if(!window.claude || typeof window.claude.use !== "function") return Promise.resolve();
+    return window.claude.use("downloads").then(function(ns){ downloadsNS = ns; })
+      .catch(function(){});
+  }
+
+  /* An ordinary browser download. Used everywhere the Claude viewer's save
+     capability isn't there — which is every installed and hosted copy of the app. */
+  function anchorSave(filename, text){
+    var url = URL.createObjectURL(new Blob([text], {type: "application/json"}));
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
+  }
+
+  /* The viewer's save surface caps out at 16MB, which a record full of photo
+     evidence passes easily — so fall through to the ordinary download there too. */
+  function saveTextFile(filename, text, okMsg){
+    if(!downloadsNS){
+      try{ anchorSave(filename, text); showToast(okMsg); }
+      catch(e){ showToast("This device wouldn't save the file."); }
+      return;
     }
-    return window.claude.use("downloads").then(function(ns){ downloadsNS = ns; if(!ns) document.getElementById("btnBackup").hidden = true; })
-      .catch(function(){ document.getElementById("btnBackup").hidden = true; });
+    downloadsNS.save({filename: filename, data: text}).then(function(){
+      showToast(okMsg);
+    }).catch(function(err){
+      var code = err && err.code;
+      if(code === "declined"){ showToast("Save cancelled."); return; }
+      try{ anchorSave(filename, text); showToast(okMsg); }
+      catch(e){
+        showToast(code === "too_large"
+          ? "Too large to save here — open the app in your browser to back up."
+          : "Couldn't save the file here.");
+      }
+    });
+  }
+
+  function backupFilename(){
+    return "ukca-toy-tests-backup-" + new Date().toISOString().slice(0, 10) + ".json";
   }
 
   document.getElementById("btnBackup").addEventListener("click", function(){
-    if(!downloadsNS){ showToast("Backup download isn't available in this view."); return; }
-    var fname = "ukca-toy-tests-backup-" + new Date().toISOString().slice(0,10) + ".json";
-    downloadsNS.save({ filename: fname, data: JSON.stringify(state, null, 2) }).then(function(){
-      showToast("Backup saved.");
-    }).catch(function(){ showToast("Backup was cancelled or unavailable."); });
+    saveTextFile(backupFilename(), JSON.stringify(state), "Backup saved.");
   });
 
   document.getElementById("btnImport").addEventListener("click", function(){
@@ -1707,10 +1747,33 @@
     reader.onload = function(){
       try{
         var data = JSON.parse(reader.result);
-        if(!data || !data.records) throw new Error("bad shape");
+        if(!data || typeof data !== "object") throw new Error("bad shape");
+
+        /* A details file has no records in it. Rather than rejecting it for coming
+           through the wrong button, just apply it as details. */
+        if(!data.records && (data.profile || looksLikeProfile(data))){
+          var incomingProfile = data.profile || data;
+          ensureProfileShape();
+          var filled = 0;
+          PROFILE_FIELDS.forEach(function(f){
+            if(typeof incomingProfile[f.key] === "string" && incomingProfile[f.key].trim()){
+              state.profile[f.key] = incomingProfile[f.key];
+              filled++;
+            }
+          });
+          if(!filled) throw new Error("bad shape");
+          renderProfileFields();
+          applyProfileEverywhere();
+          return;
+        }
+
+        if(!data.records) throw new Error("bad shape");
         var incoming = Object.keys(data.records).length;
         confirmDialog(
-          "Restore " + incoming + " test record(s) from this backup? This will be merged with what's currently saved (matching IDs are overwritten).",
+          "Restore " + incoming + " test record(s)" +
+          (Array.isArray(data.materials) && data.materials.length
+            ? " and " + data.materials.length + " material(s)" : "") +
+          " from this backup? Anything already here with a matching ID is replaced by the backup's version.",
           "Restore"
         ).then(function(ok){
           if(!ok) return;
@@ -1728,18 +1791,31 @@
               }
             });
           }
+          var matsIn = 0;
           if(Array.isArray(data.materials)){
             data.materials.forEach(function(m){
-              if(!findMaterial(m.id)) state.materials.push(m);
+              if(!m || !m.id) return;
+              var existing = findMaterial(m.id);
+              if(existing){
+                /* Same material, newer details — take them, the way records do.
+                   Only adding unseen ones meant edits never crossed devices. */
+                Object.keys(m).forEach(function(k){ existing[k] = m[k]; });
+              } else {
+                state.materials.push(m);
+              }
+              matsIn++;
             });
             ensureMaterialsShape();
           }
           if(data.activeId && state.records[data.activeId]) state.activeId = data.activeId;
           render();
           scheduleSave();
-          showToast("Backup restored.");
+          showToast("Restored " + incoming + " record" + (incoming === 1 ? "" : "s") +
+            (matsIn ? " and " + matsIn + " material" + (matsIn === 1 ? "" : "s") : "") + ".");
         });
-      }catch(err){ showToast("That file doesn't look like a valid backup."); }
+      }catch(err){
+        showToast("That file isn't a backup or a details file — pick the .json the app saved.");
+      }
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -4039,20 +4115,8 @@
 
     document.getElementById("profileExport").addEventListener("click", function(){
       ensureProfileShape();
-      var text = JSON.stringify({profile: state.profile}, null, 2);
-      if(downloadsNS){
-        downloadsNS.save({filename: "ukca-my-details.json", data: text})
-          .then(function(){ showToast("Details file saved."); })
-          .catch(function(){ showToast("Save was cancelled."); });
-        return;
-      }
-      try{
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([text], {type: "application/json"}));
-        a.download = "ukca-my-details.json";
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
-      }catch(e){ showToast("Couldn't save the details file here."); }
+      saveTextFile("ukca-my-details.json",
+        JSON.stringify({profile: state.profile}, null, 2), "Details file saved.");
     });
 
     document.getElementById("profileImportBtn").addEventListener("click", function(){
@@ -4066,6 +4130,7 @@
         try{
           var data = JSON.parse(reader.result);
           var incoming = data.profile || data;
+          if(!data.profile && !looksLikeProfile(data)) throw new Error("no details in it");
           ensureProfileShape();
           var n = 0;
           PROFILE_FIELDS.forEach(function(f){
@@ -4078,7 +4143,7 @@
           renderProfileFields();
           document.getElementById("profileOverlay").classList.remove("open");
           applyProfileEverywhere();
-        }catch(err){ showToast("That file doesn't look like a details file."); }
+        }catch(err){ showToast("No details found in that file — pick the details .json."); }
       };
       reader.readAsText(file);
       e.target.value = "";
