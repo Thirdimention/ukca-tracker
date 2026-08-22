@@ -243,8 +243,26 @@
   }
   .rail-block{margin-bottom:20px;}
   .rail-label{
+    display:flex; align-items:center; gap:7px;
     font-family:var(--font-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
     color:var(--ink-faint); padding:0 8px 6px;
+  }
+  .rail-count{
+    font-size:10px; color:var(--ink-muted); background:var(--surface-alt);
+    border:1px solid var(--line); border-radius:20px; padding:1px 7px; letter-spacing:0;
+  }
+  .rail-empty{font-size:12px; color:var(--ink-faint); padding:6px 9px;}
+  .record-item.is-done .record-name{color:var(--ink-muted);}
+
+  /* Completion control */
+  .done-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .done-bar .done-msg{font-size:12.5px; color:var(--ink-muted); flex:1; min-width:180px;}
+  .done-bar .done-msg b{color:var(--ink); font-weight:600;}
+  .done-badge{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--pass); background:var(--pass-bg); border:1px solid var(--pass-line);
+    border-radius:8px; padding:5px 10px;
   }
   .record-list{display:flex; flex-direction:column; gap:3px;}
   .record-item{
@@ -343,6 +361,30 @@
   .section-head h2{font-size:16.5px;}
   .section-desc{font-size:12.5px; color:var(--ink-muted); margin:0 0 10px; max-width:70ch;}
   .section-count{margin-left:auto; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-muted);}
+
+  /* Folding */
+  .fold-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:8px; flex:none;
+    border:1px solid transparent; background:transparent; color:var(--ink-faint); cursor:pointer;
+    transition:transform .18s cubic-bezier(.4,0,.2,1), color .12s, background .12s;
+  }
+  .fold-btn:hover{background:var(--surface-alt); color:var(--ink);}
+  .section[data-folded="1"] .fold-btn{transform:rotate(-90deg);}
+  .section[data-folded="1"] .item-list,
+  .section[data-folded="1"] .markall{display:none;}
+  .section[data-folded="1"]{opacity:.72;}
+  .section[data-folded="1"]:hover{opacity:1;}
+  .section[data-folded="1"] .section-head{margin-bottom:0;}
+  .section-head{border-radius:10px; padding:4px 6px; margin-left:-6px; margin-right:-6px;}
+  .section-head:hover{background:var(--surface-alt);}
+  @media print{
+    .section[data-folded="1"] .item-list,
+    .section[data-folded="1"] .markall{display:flex !important;}
+    .section[data-folded="1"] .item-list{display:flex !important; flex-direction:column;}
+    .section[data-folded="1"]{opacity:1 !important;}
+    .fold-btn{display:none !important;}
+  }
 
   .item-list{display:flex; flex-direction:column; gap:10px;}
   .item-card{
@@ -642,6 +684,8 @@
     box-shadow:var(--shadow); padding:20px 20px 16px; max-width:360px; width:100%;
   }
   .modal-box p{margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--ink);}
+  .prompt-title{font-size:18px; margin-bottom:4px;}
+  .prompt-hint{font-size:12.5px; color:var(--ink-muted); margin:0 0 16px !important; line-height:1.5;}
   .modal-actions{display:flex; justify-content:flex-end; gap:8px;}
   .btn.danger-fill{background:var(--fail); border-color:var(--fail); color:#fff;}
   .btn.danger-fill:hover{filter:brightness(1.08);}
@@ -887,7 +931,7 @@
     .icon-btn, .notes-toggle, .photo-toggle, .newtest-btn, .disclaimer .runtime-note,
     .modal-overlay, .lightbox, .toast, .doc-chip button,
     .view-switch, .meta-card, .tf-auto-tag, .tf-linkbtn, .markall, .jump-row,
-    .menu-btn, .drawer-scrim, .brand-text p{display:none !important;}
+    .menu-btn, .drawer-scrim, .brand-text p, .done-bar{display:none !important;}
     .proc-item{page-break-inside:avoid;}
     .doc-chip{cursor:default;}
     body{background:#fff; color:#000;}
@@ -975,9 +1019,13 @@
         </button>
       </div>
       <div class="rail-block">
-        <div class="rail-label">Test records</div>
+        <div class="rail-label">In progress</div>
         <div class="record-list" id="recordList"></div>
-        <button class="btn newtest-btn" id="btnNewTest">+ New test record</button>
+        <button class="btn primary newtest-btn" id="btnNewTest">+ New toy</button>
+      </div>
+      <div class="rail-block" id="doneBlock" hidden>
+        <div class="rail-label">Completed toys <span class="rail-count" id="doneCount">0</span></div>
+        <div class="record-list" id="doneList"></div>
       </div>
       <div class="rail-block" id="secNavBlock">
         <div class="rail-label">Sections</div>
@@ -1036,6 +1084,7 @@
           <div class="proc-overview-track"><div id="procOverallFill" style="width:0;"></div></div>
           <span id="procOverallStat" class="proc-phase-summary">0 / 8 steps done</span>
         </div>
+        <div class="done-bar" id="doneBar"></div>
         <div class="fail-banner" id="failBanner" hidden>
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 1.5 15 14.5H1L8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span id="failBannerText"></span>
@@ -1066,6 +1115,25 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="promptOverlay">
+  <div class="modal-box">
+    <h3 id="promptTitle" class="prompt-title">New toy</h3>
+    <p class="prompt-hint" id="promptHint"></p>
+    <div class="cloud-field">
+      <label for="promptInput">Toy name</label>
+      <input id="promptInput" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="cloud-field" id="promptSelectWrap" hidden>
+      <label for="promptSelect">Material</label>
+      <select id="promptSelect" class="mat-select"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="promptCancel">Cancel</button>
+      <button class="btn primary" id="promptOk">Create</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="profileOverlay">
   <div class="cloud-box">
@@ -1393,7 +1461,9 @@
     close:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     doc:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 1.8h5.2L12.2 5v9.2c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1V2.8c0-.55.45-1 1-1z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M9.2 1.8V5h3" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/></svg>',
     check:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    open:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 13h7a1.5 1.5 0 0 0 1.5-1.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    open:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 13h7a1.5 1.5 0 0 0 1.5-1.5V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    undo:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 6.6h6.1a3.4 3.4 0 0 1 0 6.8H5.6" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.8 3.4 3 6.6l2.8 3.2" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    chevron:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 6.5L8 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
   var LS_KEY = "ukca_toy_test_tracker_v1";
 
@@ -1419,7 +1489,8 @@
     var r = {
       id: uid(), name:"", businessName:"", toyPrototype:"", ageRange:"",
       tester:"", date: new Date().toISOString().slice(0,10),
-      createdAt: Date.now(), updatedAt: Date.now(), comments:"", items:{}, procedure:{}, techFile: newTechFile()
+      createdAt: Date.now(), updatedAt: Date.now(), completedAt: 0,
+      comments:"", items:{}, procedure:{}, techFile: newTechFile()
     };
     SECTIONS.forEach(function(sec){
       sec.items.forEach(function(it){ r.items[it.id] = {status:null, notes:"", photos:[]}; });
@@ -1540,6 +1611,7 @@
       });
     });
     if(typeof rec.materialId !== "string") rec.materialId = "";
+    if(typeof rec.completedAt !== "number") rec.completedAt = 0;
   }
 
   function ensureDeclarationShape(rec){
@@ -1572,11 +1644,12 @@
 
   function activeRecord(){ return state.records[state.activeId]; }
 
+  /* Named after the toy, never the business — every record shares the business name,
+     so falling back to it labelled them all identically. */
   function recordLabel(rec, fallback){
     var n = (rec.name || "").trim();
     if(n) return n;
     if(rec.toyPrototype && rec.toyPrototype.trim()) return rec.toyPrototype.trim();
-    if(rec.businessName && rec.businessName.trim()) return rec.businessName.trim();
     return fallback;
   }
 
@@ -2059,46 +2132,99 @@
     return c;
   }
 
+  /* How far off a finished, showable file this record is. */
+  function recordReadiness(rec){
+    var c = recordCounts(rec);
+    var proc = procedureCounts(rec);
+    var tf = tfCompletion(rec);
+    var blockers = [];
+    if(c.fail > 0) blockers.push(c.fail + " test" + (c.fail===1?"":"s") + " failing");
+    if(c.pending > 0) blockers.push(c.pending + " test" + (c.pending===1?"":"s") + " not recorded");
+    if(proc.done < proc.total) blockers.push((proc.total-proc.done) + " UKCA step" + ((proc.total-proc.done)===1?"":"s") + " left");
+    if(tf.done < tf.total) blockers.push((tf.total-tf.done) + " technical file section" + ((tf.total-tf.done)===1?"":"s") + " blank");
+    return {ready: blockers.length === 0, blockers: blockers};
+  }
+
+  function recordRow(id, rec){
+    var counts = recordCounts(rec);
+    var flag = "pending";
+    if(counts.fail > 0) flag = "fail";
+    else if(counts.pending === 0) flag = "done";
+    var row = document.createElement("div");
+    row.className = "record-item" + (id === state.activeId ? " active" : "");
+    var serial = recordSerial(rec);
+    row.innerHTML =
+      '<span class="record-flag ' + flag + '"></span>' +
+      '<span class="record-main">' +
+        '<span class="record-name">' + escapeHtml(recordLabel(rec, "Untitled test")) + '</span>' +
+        '<span class="record-sub">' + escapeHtml(serial || fmtDate(rec.date)) + '</span>' +
+      '</span>' +
+      '<button class="icon-btn record-rename" title="Rename this record" aria-label="Rename record">' + ICONS.note + '</button>' +
+      '<button class="icon-btn record-del" title="Delete this record" aria-label="Delete record">' + ICONS.trash + '</button>';
+    row.addEventListener("click", function(e){
+      if(e.target.closest(".record-del") || e.target.closest(".record-rename")) return;
+      state.activeId = id; render(); scheduleSave();
+    });
+    row.querySelector(".record-del").addEventListener("click", function(e){
+      e.stopPropagation();
+      confirmDialog("Delete this test record? Photos and notes will be lost.", "Delete").then(function(ok){
+        if(!ok) return;
+        delete state.records[id];
+        if(state.activeId === id) state.activeId = null;
+        ensureActive(); render(); scheduleSave();
+        showToast("Test record deleted.");
+      });
+    });
+    row.querySelector(".record-rename").addEventListener("click", function(e){
+      e.stopPropagation(); startRenameRecord(row, rec);
+    });
+    return row;
+  }
+
   function renderRecordList(){
     var list = document.getElementById("recordList");
-    var ids = Object.keys(state.records).sort(function(a,b){ return state.records[a].createdAt - state.records[b].createdAt; });
     list.innerHTML = "";
-    ids.forEach(function(id){
+    var ids = Object.keys(state.records).sort(function(a,b){
+      return state.records[a].createdAt - state.records[b].createdAt;
+    });
+    var live = ids.filter(function(id){ return !state.records[id].completedAt; });
+    var done = ids.filter(function(id){ return !!state.records[id].completedAt; })
+                  .sort(function(a,b){ return state.records[b].completedAt - state.records[a].completedAt; });
+
+    live.forEach(function(id){ list.appendChild(recordRow(id, state.records[id])); });
+    if(!live.length){
+      var none = document.createElement("div");
+      none.className = "rail-empty";
+      none.textContent = "Nothing in progress.";
+      list.appendChild(none);
+    }
+
+    var doneList = document.getElementById("doneList");
+    var doneBlock = document.getElementById("doneBlock");
+    doneList.innerHTML = "";
+    doneBlock.hidden = !done.length;
+    document.getElementById("doneCount").textContent = done.length;
+    done.forEach(function(id){
       var rec = state.records[id];
-      var counts = recordCounts(rec);
-      var flag = "pending";
-      if(counts.fail > 0) flag = "fail";
-      else if(counts.pending === 0) flag = "done";
-      var row = document.createElement("div");
-      row.className = "record-item" + (id === state.activeId ? " active" : "");
-      row.innerHTML =
-        '<span class="record-flag ' + flag + '"></span>' +
-        '<span class="record-main">' +
-          '<span class="record-name">' + escapeHtml(recordLabel(rec, "Untitled test")) + '</span>' +
-          '<span class="record-sub">' + escapeHtml(fmtDate(rec.date)) + '</span>' +
-        '</span>' +
-        '<button class="icon-btn record-rename" title="Rename this record" aria-label="Rename record">' + ICONS.note + '</button>' +
-        '<button class="icon-btn record-del" title="Delete this record" aria-label="Delete record">' + ICONS.trash + '</button>';
-      row.addEventListener("click", function(e){
-        if(e.target.closest(".record-del") || e.target.closest(".record-rename")) return;
-        state.activeId = id; render(); scheduleSave();
-      });
-      row.querySelector(".record-del").addEventListener("click", function(e){
+      var row = recordRow(id, rec);
+      row.classList.add("is-done");
+      var sub = row.querySelector(".record-sub");
+      sub.textContent = (recordSerial(rec) || recordLabel(rec, "")) + " · " +
+        fmtDate(new Date(rec.completedAt).toISOString().slice(0,10));
+      /* Put it back in progress without having to open it first. */
+      var reopen = document.createElement("button");
+      reopen.type = "button"; reopen.className = "icon-btn record-reopen";
+      reopen.title = "Move back to In progress";
+      reopen.setAttribute("aria-label", "Reopen " + recordLabel(rec, "record"));
+      reopen.innerHTML = ICONS.undo;
+      reopen.addEventListener("click", function(e){
         e.stopPropagation();
-        confirmDialog("Delete this test record? Photos and notes will be lost.", "Delete").then(function(ok){
-          if(!ok) return;
-          delete state.records[id];
-          if(state.activeId === id) state.activeId = null;
-          ensureActive();
-          render(); scheduleSave();
-          showToast("Test record deleted.");
-        });
+        rec.completedAt = 0; rec.updatedAt = Date.now();
+        render(); scheduleSave();
+        showToast(recordLabel(rec, "Toy") + " moved back to In progress.");
       });
-      row.querySelector(".record-rename").addEventListener("click", function(e){
-        e.stopPropagation();
-        startRenameRecord(row, rec);
-      });
-      list.appendChild(row);
+      row.insertBefore(reopen, row.querySelector(".record-rename"));
+      doneList.appendChild(row);
     });
   }
 
@@ -2233,6 +2359,58 @@
     }
     updateProcSummaries(rec);
     updateTechAuto(rec);
+    renderDoneBar(rec);
+  }
+
+  /* Filing a finished toy away, and telling you plainly what's left if it isn't. */
+  function renderDoneBar(rec){
+    var bar = document.getElementById("doneBar");
+    if(!bar) return;
+    bar.innerHTML = "";
+    var r = recordReadiness(rec);
+
+    if(rec.completedAt){
+      var badge = document.createElement("span");
+      badge.className = "done-badge";
+      badge.innerHTML = ICONS.check + " Completed " +
+        escapeHtml(fmtDate(new Date(rec.completedAt).toISOString().slice(0, 10)));
+      bar.appendChild(badge);
+      var re = document.createElement("button");
+      re.type = "button"; re.className = "btn";
+      re.textContent = "Reopen";
+      re.addEventListener("click", function(){
+        rec.completedAt = 0; rec.updatedAt = Date.now();
+        render(); scheduleSave();
+        showToast("Reopened — it's back in your in-progress list.");
+      });
+      bar.appendChild(re);
+      return;
+    }
+
+    var msg = document.createElement("span");
+    msg.className = "done-msg";
+    msg.innerHTML = r.ready
+      ? "Everything's filled in. File this toy away so it's easy to find later."
+      : "Still to do: <b>" + escapeHtml(r.blockers.join(" · ")) + "</b>";
+    bar.appendChild(msg);
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn" + (r.ready ? " primary" : "");
+    btn.textContent = "Mark complete";
+    btn.addEventListener("click", function(){
+      var ask = r.ready
+        ? "File " + recordLabel(rec, "this toy") + " as complete? It moves to Completed toys, and you can reopen it any time."
+        : "This isn't finished yet — " + r.blockers.join(", ") + ". File it as complete anyway?";
+      confirmDialog(ask, "Mark complete").then(function(ok){
+        if(!ok) return;
+        rec.completedAt = Date.now();
+        rec.updatedAt = Date.now();
+        render(); scheduleSave();
+        showToast(recordLabel(rec, "Toy") + " filed under Completed toys.");
+      });
+    });
+    bar.appendChild(btn);
   }
 
   function itemCard(rec, sec, it){
@@ -2271,6 +2449,9 @@
       b.textContent = STATUS_LABEL[val];
       b.addEventListener("click", function(){
         var cur = rec.items[it.id];
+        /* Only the moment a section *becomes* finished should fold it — editing an
+           already-finished section you deliberately opened must leave it open. */
+        var wasComplete = sectionComplete(rec, sec);
         cur.status = (cur.status === val) ? null : val;
         rec.updatedAt = Date.now();
         Array.prototype.forEach.call(group.children, function(btn){
@@ -2282,6 +2463,16 @@
         renderSecNav(rec);
         renderRecordList();
         scheduleSave();
+        /* Just finished this section? Fold it and move on to the next one. */
+        var wrap = document.getElementById("sec-" + sec.id);
+        if(wrap && cur.status && !wasComplete && sectionComplete(rec, sec) && wrap.dataset.folded !== "1"){
+          collapseMap(rec)[sec.id] = true;
+          setFold(wrap, true);
+          var cnt = wrap.querySelector(".section-count");
+          var sc = sectionCounts(rec, sec);
+          if(cnt) cnt.textContent = (sc.pass+sc.fail+sc.na) + " / " + sec.items.length + " recorded" + (sc.fail ? " · " + sc.fail + " fail" : "");
+          scrollToNextOpen("sec-" + sec.id);
+        }
       });
       group.appendChild(b);
     });
@@ -2483,12 +2674,19 @@
     cbWrap.appendChild(cb);
     cbWrap.appendChild(cbVisual);
     cb.addEventListener("change", function(){
+      var wasComplete = phaseComplete(rec, phase);
       data.done = cb.checked;
       rec.updatedAt = Date.now();
       card.dataset.done = data.done ? "1" : "";
       updateProcSummaries(rec);
       renderSecNav(rec);
+      renderProgress(rec);
       scheduleSave();
+      var pw = document.getElementById("proc-phase-" + phase.id);
+      if(pw && data.done && !wasComplete && phaseComplete(rec, phase) && pw.dataset.folded !== "1"){
+        collapseMap(rec)["phase-" + phase.id] = true;
+        setFold(pw, true);
+      }
     });
     head.appendChild(cbWrap);
 
@@ -2611,7 +2809,16 @@
     head.innerHTML =
       '<span class="section-num">' + phase.badge + '</span><h2>' + escapeHtml(phase.title) + '</h2>' +
       '<span class="section-count" id="proc-summary-' + phase.id + '">' + c.done + ' / ' + c.total + ' done</span>';
+    head.appendChild(foldButton(wrap, rec, "phase-" + phase.id));
+    head.style.cursor = "pointer";
+    head.addEventListener("click", function(e){
+      if(e.target.closest(".fold-btn")) return;
+      var now = wrap.dataset.folded === "1";
+      collapseMap(rec)["phase-" + phase.id] = !now;
+      setFold(wrap, !now);
+    });
     wrap.appendChild(head);
+    setFold(wrap, isFolded(rec, "phase-" + phase.id, phaseComplete(rec, phase)));
     var list = document.createElement("div");
     list.className = "item-list";
     phase.items.forEach(function(it){ list.appendChild(procItemCard(rec, phase, it)); });
@@ -3968,6 +4175,63 @@
     document.getElementById("btnPrint").textContent = VIEWS[activeView].print;
   }
 
+  /* ---- Section folding ----
+     A finished section folds itself away so the next unanswered one is in front of
+     you. Session-only: it's a working convenience, not part of the record. */
+  var uiCollapse = {};
+  function collapseMap(rec){
+    if(!uiCollapse[rec.id]) uiCollapse[rec.id] = {};
+    return uiCollapse[rec.id];
+  }
+  function sectionComplete(rec, sec){
+    return sec.items.every(function(it){
+      return rec.items[it.id] && rec.items[it.id].status;
+    });
+  }
+  function phaseComplete(rec, phase){
+    return phase.items.every(function(it){
+      return rec.procedure[it.id] && rec.procedure[it.id].done;
+    });
+  }
+  /* No stored preference means: folded if finished, open if not. */
+  function isFolded(rec, key, doneNow){
+    var m = collapseMap(rec);
+    return (key in m) ? m[key] : doneNow;
+  }
+  function setFold(wrap, folded){
+    wrap.dataset.folded = folded ? "1" : "";
+    var btn = wrap.querySelector(".fold-btn");
+    if(btn) btn.setAttribute("aria-expanded", folded ? "false" : "true");
+  }
+  function foldButton(wrap, rec, key, onToggle){
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "fold-btn";
+    btn.innerHTML = ICONS.chevron;
+    btn.setAttribute("aria-label", "Show or hide this section");
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var now = wrap.dataset.folded === "1";
+      collapseMap(rec)[key] = !now;
+      setFold(wrap, !now);
+      if(onToggle) onToggle(!now);
+    });
+    return btn;
+  }
+  /* After a section folds, put the next unfinished one where you're looking. */
+  function scrollToNextOpen(afterId){
+    var order = SECTIONS.map(function(s){ return "sec-" + s.id; });
+    var idx = order.indexOf(afterId);
+    for(var i = idx + 1; i < order.length; i++){
+      var el = document.getElementById(order[i]);
+      if(el && el.dataset.folded !== "1"){
+        el.scrollIntoView({behavior: "smooth", block: "start"});
+        return;
+      }
+    }
+    var el2 = document.getElementById(afterId);
+    if(el2) el2.scrollIntoView({behavior: "smooth", block: "start"});
+  }
+
   /* Mark every item in a section at once — the common case when a whole section
      applies (or doesn't) to this toy. */
   function markAllBar(rec, sec){
@@ -3987,6 +4251,8 @@
         sec.items.forEach(function(it){
           if(rec.items[it.id]) rec.items[it.id].status = pair[0];
         });
+        if(pair[0]) collapseMap(rec)[sec.id] = true;
+        else delete collapseMap(rec)[sec.id];
         rec.updatedAt = Date.now();
         renderSections(rec);
         renderProgress(rec);
@@ -4016,7 +4282,16 @@
       head.innerHTML =
         '<span class="section-num">' + sec.id + '</span><h2>' + escapeHtml(sec.title) + '</h2>' +
         '<span class="section-count">' + (c.pass+c.fail+c.na) + ' / ' + sec.items.length + ' recorded' + (c.fail? ' · ' + c.fail + ' fail':'') + '</span>';
+      head.appendChild(foldButton(wrap, rec, sec.id));
+      head.style.cursor = "pointer";
+      head.addEventListener("click", function(e){
+        if(e.target.closest(".fold-btn")) return;
+        var now = wrap.dataset.folded === "1";
+        collapseMap(rec)[sec.id] = !now;
+        setFold(wrap, !now);
+      });
       wrap.appendChild(head);
+      setFold(wrap, isFolded(rec, sec.id, sectionComplete(rec, sec)));
       wrap.appendChild(markAllBar(rec, sec));
       var list = document.createElement("div");
       list.className = "item-list";
@@ -4100,15 +4375,34 @@
     });
   });
 
-  document.getElementById("btnNewTest").addEventListener("click", function(){
-    var r = newRecord();
-    // carry over business name for convenience
-    var cur = activeRecord();
-    if(cur) r.businessName = cur.businessName;
-    state.records[r.id] = r; state.activeId = r.id;
-    render(); scheduleSave();
-    window.scrollTo({top:0, behavior:"smooth"});
-  });
+  /* Ask for the one thing only you know — the toy's name — then fill in the rest
+     from your details and the material library. */
+  function startNewRecord(){
+    promptDialog({
+      title: "New toy",
+      hint: "Everything else fills in from My details and the material you pick.",
+      placeholder: "e.g. Lizard",
+      okLabel: "Create record",
+      material: true,
+      materialId: (activeRecord() || {}).materialId || ""
+    }).then(function(res){
+      if(!res) return;
+      var r = newRecord();
+      r.toyPrototype = res.name;
+      r.name = "";
+      if(res.materialId) r.materialId = res.materialId;
+      applyDefaults(r);
+      state.records[r.id] = r;
+      state.activeId = r.id;
+      setView("checklist");
+      render();
+      scheduleSave();
+      window.scrollTo({top: 0, behavior: "smooth"});
+      var serial = recordSerial(r);
+      showToast(res.name + " created" + (serial ? " — serial " + serial : "") + ".");
+    });
+  }
+  document.getElementById("btnNewTest").addEventListener("click", startNewRecord);
 
   document.getElementById("btnPrint").addEventListener("click", function(){
     var handled = false;
@@ -4805,6 +5099,67 @@
     if(cloud.cfg.auto && cloudConfigured() && cloud.cfg.branch){
       setTimeout(function(){ cloudPull(false); }, 1200);
     }
+  }
+
+  /* A one-question dialog — same shell as the confirm, with a field. */
+  function promptDialog(opts){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById("promptOverlay");
+      document.getElementById("promptTitle").textContent = opts.title || "";
+      document.getElementById("promptHint").textContent = opts.hint || "";
+      var input = document.getElementById("promptInput");
+      var sel = document.getElementById("promptSelect");
+      var selWrap = document.getElementById("promptSelectWrap");
+      input.placeholder = opts.placeholder || "";
+      input.value = opts.value || "";
+      document.getElementById("promptOk").textContent = opts.okLabel || "Create";
+
+      /* Offer the material here too, so the serial is right from the start. */
+      selWrap.hidden = !opts.material;
+      if(opts.material){
+        sel.innerHTML = "";
+        var blank = document.createElement("option");
+        blank.value = ""; blank.textContent = state.materials.length ? "Choose later" : "None added yet";
+        sel.appendChild(blank);
+        state.materials.forEach(function(m){
+          var o = document.createElement("option");
+          o.value = m.id; o.textContent = materialLabel(m) + " · " + materialCode(m);
+          sel.appendChild(o);
+        });
+        sel.value = opts.materialId || "";
+      }
+
+      overlay.classList.add("open");
+      setTimeout(function(){ input.focus(); input.select(); }, 30);
+
+      var settled = false;
+      function cleanup(result){
+        if(settled) return; settled = true;
+        overlay.classList.remove("open");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        overlay.removeEventListener("click", onOverlay);
+        input.removeEventListener("keydown", onKey);
+        document.removeEventListener("keydown", onEsc);
+        resolve(result);
+      }
+      var okBtn = document.getElementById("promptOk");
+      var cancelBtn = document.getElementById("promptCancel");
+      function onOk(){
+        var v = input.value.trim();
+        if(!v){ input.focus(); return; }
+        cleanup({name: v, materialId: opts.material ? sel.value : ""});
+      }
+      function onCancel(){ cleanup(null); }
+      function onOverlay(e){ if(e.target === overlay) cleanup(null); }
+      function onKey(e){ if(e.key === "Enter"){ e.preventDefault(); onOk(); } }
+      function onEsc(e){ if(e.key === "Escape") cleanup(null); }
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      overlay.addEventListener("click", onOverlay);
+      input.addEventListener("keydown", onKey);
+      document.addEventListener("keydown", onEsc);
+    });
   }
 
   function escapeHtml(s){
